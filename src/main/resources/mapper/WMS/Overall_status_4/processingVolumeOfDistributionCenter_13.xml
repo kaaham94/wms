@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="processingVolumeOfDistributionCenter_13">
+	 
+	<resultMap id="processingVolumeOfDistributionCenter_13Select_table" type="hashmap"></resultMap>
+	<resultMap id="processingVolumeOfDistributionCenter_13Select_chart" type="hashmap"></resultMap>
+	
+	<select id="processingVolumeOfDistributionCenter_13Select"  parameterType="hashmap"  resultMap="processingVolumeOfDistributionCenter_13Select_table, processingVolumeOfDistributionCenter_13Select_chart"  >      	
+  		EXEC DBO.UP_P9490_SELECT_R1 
+			#{MANDT},       --VARCHAR(3),		--클라이언트
+			#{SEARCHTYPE},	--VARCHAR(10),		-- WEEK / DAY
+			#{FDATE},		--VARCHAR(10),		--시작일자
+			#{TDATE},		--VARCHAR(10),		--종료일자
+			#{WERKS},		--VARCHAR(20),		--법인
+			#{LGORT},		--VARCHAR(20),		--저장위치
+			#{BSART},		--VARCHAR(10),		-- 입고요청구분
+			#{SHGBN},		--VARCHAR(10),		-- 배송방법
+			#{PODO},		--VARCHAR(10),		-- PO / DO
+			#{BELN},		--VARCHAR(30),		-- 요청번호
+			#{USERID}		--VARCHAR(20)		--사용자
+     </select>
+     
+     <!-- 법인 -->
+	 <select id="processingVolumeOfDistributionCenter_13Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + werks + '] ' + isnull(plantname,'')  AS PLANTNAME
+			, WERKS AS WERKS
+			  FROM tm_plant with (nolock) 
+			 WHERE MANDT = #{MANDT}
+			   AND USEFLAG <![CDATA[<>]]> 'N'
+			   UNION
+			  SELECT '',''
+			 ORDER BY werks
+	 </select>
+	
+	 <!-- 저장위치 -->    
+	 <select id="processingVolumeOfDistributionCenter_13Select_LGORT" parameterType="hashmap" resultType="hashmap" >
+		<choose>
+			<when test='WERKS !=null  and  WERKS !=""'>
+				SELECT '[' + LGORT + '] ' + isnull(SLNAME,'')  AS SLNAME
+					,LGORT
+				FROM TM_STORELOC with (nolock) 
+				WHERE MANDT = #{MANDT}
+					AND	WERKS = #{WERKS}			--법인코드
+					AND USEFLAG = 'Y' 
+				UNION
+				SELECT '',''
+				ORDER BY LGORT   
+			</when>
+			<otherwise>
+				SELECT '' AS SLNAME, '' AS LGORT
+			</otherwise>
+		</choose>
+	 </select>
+     
+     <!-- 배송방법 -->    
+	 <select id="processingVolumeOfDistributionCenter_13Select_SHGBN" parameterType="hashmap" resultType="hashmap" >
+		SELECT '[' + CODE + '] ' + ISNULL(CODENAME,'')   AS 'SHGBNNAME'
+				,CODE AS 'SHGBN'
+		FROM TB_CODE WITH (NOLOCK) 
+		WHERE CODE NOT IN ('$')
+		   AND CODEGRP = 'SHGBN'
+		   AND UseFlag = 'Y' 
+		ORDER BY DISPSEQ, 1 
+	 </select>
+     
+     <!-- 입고요청구분 -->    
+	 <select id="processingVolumeOfDistributionCenter_13Select_BSART" parameterType="hashmap" resultType="hashmap" >
+		SELECT '[' + CODE + '] ' + ISNULL(CODENAME,'')   AS 'BSARTNAME'
+			  , CODE AS 'BSART'
+		FROM TB_CODE WITH (NOLOCK) 
+		WHERE CODE NOT IN ('$')
+		   AND CODEGRP = 'BSART'
+		   AND UseFlag = 'Y' 
+		ORDER BY DISPSEQ, 1 
+	 </select>
+	 
+	 <!-- PO / DO -->    
+	 <select id="processingVolumeOfDistributionCenter_13Select_PODO" parameterType="hashmap" resultType="hashmap" >
+			select N'[PO] 입고요청' as 'PODONAME' , 'PO' as 'PODO'
+			union
+			select N'[DO] 출고요청' ,'DO'
+	 </select>
+	 
+
+
+	 
+</mapper>

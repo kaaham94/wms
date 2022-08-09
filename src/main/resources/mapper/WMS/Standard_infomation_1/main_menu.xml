@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="main_menu">
+	<select id="noticeSelect" parameterType="hashmap" resultType="hashmap" >
+        <![CDATA[
+        	select      top 1 TITLE + ' (' + SDATE + ')' AS TITLE, seq, TERM
+			from        TS_BOARD
+			where        PC = 'X'
+			and          STATUS = '1'
+			order        by SEQ desc
+        ]]>
+     </select>
+     
+     <select id="noticeDetailSelect" parameterType="hashmap" resultType="hashmap" >
+        <![CDATA[
+        	select writer, target, title, subject, userid, PC, PDA, TERM, STATUS
+		    from ts_board 
+		    where seq = #{SEQ}
+        ]]>
+     </select>
+</mapper>

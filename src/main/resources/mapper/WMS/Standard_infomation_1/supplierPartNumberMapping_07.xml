@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="supplierPartNumberMapping_07">
+
+     <select id="supplierPartNumberMapping_07Select2" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P1130_SELECT] 
+			#{MANDT}, 	-- 클라이언트
+			#{WERKS}, 	-- 법인코드
+			#{LGORT},	-- 저장위치코드
+			#{SLNAME}, 	-- 저장위치명
+			#{USEFLAG}  -- 사용유무
+     </select>
+   
+   
+     <select id="supplierPartNumberMapping_07Select" parameterType="hashmap" resultType="hashmap" >
+			SELECT NULL AS NEWFLAG 
+				, NULL AS SEL 
+				, COUNT(*) OVER() AS TOTAL_COUNT
+				, '[' + A.CUSTCD + '] ' + B.CUSTNM AS CUSTCD  --거래처코드(키값)
+				, A.CUSTCD AS CUSTCD_CODE  --거래처코드(키값)
+				, A.CMATNR  --거래처품번(키값)
+				, ISNULL(A.MAKTX, '') AS MAKTX	--HK품번  
+				, ISNULL(C.MATNR, '') AS MATNR
+				, A.USEFLAG		--사용유무
+				, ISNULL(A.REMARK, '') AS REMARK	--비고
+				, ISNULL(CONVERT(CHAR(10),A.MKDATE, 23),'') AS MKDATE   --등록일 
+				, ISNULL(DBO.UF_NAME(A.MKUSER),'') AS MKUSER  
+				, ISNULL(CONVERT(CHAR(10),A.MODATE, 23),'') AS MODATE  --수정일
+				, ISNULL(DBO.UF_NAME(A.MOUSER),'') AS MOUSER  
+			FROM TB_CUSTMATNR A WITH (NOLOCK)  
+					INNER JOIN TM_CUST B WITH (NOLOCK) 
+							ON B.MANDT = A.MANDT 
+						AND B.CUSTCD = A.CUSTCD 
+					LEFT OUTER JOIN TM_MTMAST C WITH (NOLOCK) 
+							ON C.MANDT = A.MANDT 
+						AND C.MAKTX = A.MAKTX 
+			WHERE A.MANDT = #{MANDT}  
+			<if test='CUSTCD !=null  and  CUSTCD !=""' >
+				    AND A.CUSTCD LIKE '%${CUSTCD}%'
+			</if>	
+			<if test='CUSTNM !=null  and  CUSTNM !=""' >	
+				    AND B.CUSTNM LIKE N'%${CUSTNM}%'
+			</if>
+			<if test='CMATNR !=null  and  CMATNR !=""' >
+				    AND A.CMATNR LIKE '%${CMATNR}%'
+			</if>		
+			<if test='MAKTX !=null  and  MAKTX !=""' >
+				    AND A.MAKTX LIKE N'%${MAKTX}%'
+			</if>		
+			<if test='USEFLAG !=null  and  USEFLAG !=""' >
+					AND A.USEFLAG = #{USEFLAG} 
+			</if>
+			<choose>
+				<when test='orderby == "CUSTCD"'>  ORDER BY A.CUSTCD, A.CMATNR   </when>
+				<when test='orderby == "MKDATE"'>  ORDER BY A.MKDATE DESC  --등록일  </when>
+				<when test='orderby == "MODATE"'>  ORDER BY A.MODATE DESC  --수정일  </when>
+			</choose>
+     </select>
+     
+     
+     <select id="supplierPartNumberMapping_07Select_CUSTCD" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT  '[' + B.CUSTCD + '] ' + B.CUSTNM AS CUSTCD  --거래처코드
+			,B.CUSTCD AS CUSTCD_CODE
+			FROM TM_CUST B WITH (NOLOCK)  
+			WHERE B.MANDT = '100'
+			AND MFLAG = 'Y'
+				   
+			ORDER BY CUSTCD 
+     </select>
+     
+
+  	 <select id="supplierPartNumberMapping_07InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P1130_SAVE] 
+		    #{MANDT},    -- 클라이언트                 
+	      	#{CUSTCD},   -- 거래처코드         
+	        #{CMATNR},   -- 거래처품번               
+	        #{MAKTX},    -- HK품번              
+	        #{USEFLAG},  -- 사용여부                 
+	        #{REMARK},   -- 비고             
+	        #{USERID},   -- 사용자       
+	        #{NEWFLAG}   -- 신규여부   
+     </select>
+  
+     
+</mapper>

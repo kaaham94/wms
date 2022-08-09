@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="user_01">
+
+     <select id="user_01Select2" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P0111_SELECT_R2] 
+			#{MANDT},   --클라이언트    
+			#{WERKS},   --법인 
+			#{DEPT},    --부서
+			#{USERID},  --사용자아이디(=사번)
+			#{STATUS},  --상태
+			#{WKCOD},   --구분
+			#{JKCOD},   --직급
+			#{STYPE},   --근로구분
+			#{USERNAME},--사용자이름
+			#{LOGINOPT}    	
+     </select>
+   
+   
+     <select id="user_01Select" parameterType="hashmap" resultType="hashmap" >
+			SELECT '' AS NEWROW,
+			   COUNT(*) OVER() AS TOTAL_COUNT,
+			   0 AS SEL,
+			   N'[' + A.WKCOD + N'] ' + DBO.FN_GetCodeMasterName('WKCOD', A.WKCOD) AS WKCOD, --구분(=작업자구분)
+			   '[' + A.DEPT + '] ' + A.DEPTNM AS DEPT,										 --부서
+			   DEPTNM,			--부서명
+			   '[' + A.JKCOD + '] ' + DBO.FN_GetCodeMasterName('JKCOD', A.JKCOD) AS JKCOD,	 --직급
+			   ISNULL(A.USERNAME,'') AS	USERNAME, 	--사용자이름
+			   ISNULL(A.ENGNAME, '') AS ENGNAME,	--영문이름	(=영문명)
+			   A.USERID,	--사용자아이디(=사번)
+			   --A.USERPWD,	
+			   CASE STYPE WHEN '1' THEN N'[1] 정규직'	 	--근로구분
+						  ELSE N'[2] 계약직' END AS STYPE,
+			   ISNULL(A.DATEFROM, '') AS DATEFROM,					--입사일
+			   ISNULL(A.DATETO,'') AS DATETO,						--퇴사일
+			   CASE A.STAT2 WHEN '3' THEN N'[3] 재직'		--상태
+							WHEN '4' THEN N'[4] 신규'
+							WHEN '2' THEN N'[2] 퇴직'
+							WHEN '1' THEN N'[1] 휴직'
+							ELSE N'[0] 삭제' END AS STAT2,
+			   '[' + A.AUTH + '] ' + DBO.FN_GetCodeMasterName('AUTH', A.AUTH) AS AUTH,				--실사권한(=권한)
+			   CASE  WHEN ISNULL(A.PLANTCD,'') = '' THEN N''		
+					 ELSE N'[' + A.PLANTCD + '] ' + DBO.FN_GetCodeName('WERKS', A.MANDT, A.PLANTCD) END AS WERKS,	--법인
+			   ISNULL(A.PLANTCD, '') AS WERKS_CODE, --법인 코드
+			   CASE  WHEN ISNULL(A.LGORT,'') = '' THEN N''		
+					 ELSE '[' + A.LGORT + '] ' + DBO.FN_GetCodeName('LGORT', A.MANDT, A.LGORT) END AS LGORT,	--저장위치
+			   ISNULL(A.OUTSCFLAG, '') AS OUTSCFLAG, -- 외주여부
+			   ISNULL(A.STCAUTH, '') AS STCAUTH,	-- 실사권한
+			   ISNULL(A.EMAIL, '') AS EMAIL,	--EMAIL
+			   --'' AS AUTOID,
+			   ISNULL(CONVERT(VARCHAR, A.LASTLOGIN, 120),'') AS LASTLOGIN,						--최종로그인
+			   ISNULL(A.FAILPWD	, '') AS FAILPWD					--암호실패
+			   --A.AUTH,
+			   --A.DIRECT,
+			   --A.FILENAME,
+			   --'' AS IMAGEPATH,
+			   --0 AS FILE_SEL,
+			   --A.IMAGEVIEW
+		  FROM TB_USER A
+		  
+		 WHERE A.MANDT = #{MANDT}
+			<if test='WERKS !=null  and  WERKS !=""' >
+				AND A.PLANTCD = #{WERKS}
+			</if>
+			<if test='DEPT !=null  and  DEPT !=""' >
+				AND A.DEPT = #{DEPT}
+			</if>
+			<if test='STATUS !=null  and  STATUS !=""' >
+				AND A.STAT2 = #{STATUS}
+			</if>
+			<if test='WKCOD !=null  and  WKCOD !=""' >
+				AND A.WKCOD = #{WKCOD}
+			</if>
+			<if test='JKCOD !=null  and  JKCOD !=""' >
+				AND A.JKCOD = #{JKCOD}
+			</if>
+			<if test='STYPE !=null  and  STYPE !=""' >
+				AND A.STYPE = #{STYPE}
+			</if>
+			<if test='USERNAME !=null  and  USERNAME !=""' >
+				AND A.USERNAME LIKE N'%${USERNAME}%'
+			</if>
+			<if test='USERID !=null  and  USERID !=""' >
+				AND A.USERID LIKE '%${USERID}%'
+			</if>
+			<choose>
+				<when test='orderby == "UPDATE"'> ORDER BY A.upddate1 DESC, A.upddate2 DESC </when>
+			</choose>
+     </select>
+     
+  	 <select id="user_01InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+		  	EXEC [dbo].[UP_P0111_SAVE_R2] 
+			    #{MANDT},      --클라이언트
+				#{NEWFLAG},    --신규여부
+				#{USERID},     --사용자아이디
+				#{USERNAME},   --사용자이름
+				#{ENGNAME},    --영문이름
+				#{PLANTCD},    --플랜트
+				#{LGORT},      --저장위치
+				#{OUTSCFLAG},  --외주여부
+				#{STCAUTH},    --실사권한
+				#{WKCOD},      --구분
+				#{JKCOD},      --직급
+				#{STYPE},      --근로구분
+				#{AUTH},       --권한        
+				#{STAT2},      --상태
+				#{DEPT},       --부서
+				#{DEPTNM},     --부서명
+				#{UPDUSER},    --작업자
+				#{DATEFROM},   --입사일
+				#{DATETO},     --퇴사일
+				#{DIRECT},     --직간접구분
+				#{EMAIL}       --이메일	
+     </select>
+     
+ 	<!-- 법인 -->
+	<select id="user_01Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + werks + '] ' + isnull(plantname,'')  AS PLANTNAME
+			, WERKS AS WERKS
+			  FROM tm_plant with (nolock) 
+			 WHERE MANDT = #{MANDT}
+			   AND USEFLAG <![CDATA[<>]]> 'N'
+			   UNION
+			  SELECT '',''
+			 ORDER BY werks
+   	</select>
+    
+	<!-- 부서  -->
+	<select id="user_01Select_DEPT" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + code + '] ' + codename  AS 'DEPT'
+				,code AS 'DEPT_CODE'
+				,codename  AS 'CODENAME'
+			  FROM tb_code with (nolock) 
+			 WHERE codegrp = 'DEPT'
+			   AND USEFLAG = 'Y'
+			   AND code <![CDATA[<>]]> '$' 
+			 ORDER BY code 
+     </select>
+	
+	<!-- 상태  -->
+	<select id="user_01Select_STAT2" parameterType="hashmap" resultType="hashmap" >
+	     	select N'[3] 재직' as 'STAT2' , '3' as 'STAT2_CODE'
+			union
+			select N'[4] 신규' ,'4'
+			union
+			select N'[2] 퇴직' ,'2'
+			union
+			select N'[1] 휴직' ,'1'
+			union
+			select N'[0] 삭제' ,'0'
+     </select>
+     
+	 <!-- 작업자구분  -->
+	 <select id="user_01Select_WKCOD" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + code + '] ' + codename  AS 'WKCOD'
+			 ,code AS 'WKCOD_CODE'
+			  FROM tb_code with (nolock) 
+			 WHERE codegrp = 'WKCOD'
+			   AND USEFLAG = 'Y'
+			   AND code <![CDATA[<>]]> '$' 
+			 ORDER BY code
+     </select>
+  
+  
+	 <!-- 직급 -->
+     <select id="user_01Select_JKCOD" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + code + '] ' + codename AS 'JKCOD' 
+			 , code AS 'JKCOD_CODE'
+			  FROM tb_code with (nolock) 
+			 WHERE codegrp = 'JKCOD'
+			   AND USEFLAG = 'Y'
+			   AND code <![CDATA[<>]]> '$' 
+			 ORDER BY code
+     </select>
+  
+	<!-- 근로구분 -->
+     <select id="user_01Select_STYPE" parameterType="hashmap" resultType="hashmap" >
+	     	select N'[1] 정규직' as 'STYPE' , '1' as 'STYPE_CODE'
+					union
+					select N'[2] 계약직' , '2'
+     </select>
+     
+     <!-- 권한 -->
+     <select id="user_01Select_AUTH" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + CODE + '] ' + CODENAME  as 'AUTH' ,
+				CODE as 'AUTH_CODE'
+		      FROM TB_CODE with (nolock) 
+		     WHERE CODEGRP = 'AUTH' 
+		       AND CODE <![CDATA[<>]]> '$' 
+		       AND USEFLAG = 'Y' 
+		     ORDER BY CODE 
+     </select>
+     
+    
+	
+	
+	<select id="user_01Select_LGORT" parameterType="hashmap" resultType="hashmap" >
+		SELECT DISTINCT '[' + A.LGORT + '] ' + ISNULL(A.SLNAME,'') AS LGORT  ,
+		  A.LGORT as 'LGORT_CODE'
+		  FROM TM_STORELOC A WITH (NOLOCK) 
+		 WHERE A.MANDT = #{MANDT}
+		   AND A.CYFLAG = 'Y'
+		   AND A.USEFLAG = 'Y'
+		   UNION
+		 SELECT '',''
+		 ORDER BY 1 
+	</select>
+	 
+		
+	<!-- 삭제 검증 -->
+	<select id="user_01DeleteCheck_USERID" parameterType="hashmap" resultType="Integer" >
+	 	select count(*) as CNT 
+	 	from TB_USER 	
+		where USERID = #{USERID}
+		   AND MANDT = #{MANDT}
+    </select>
+	
+	<!-- 삭제 -->
+	<delete id="user_01Delete" parameterType="hashmap">
+	     <if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >  			
+				 UPDATE TS_R_USERIO 
+				   SET ENDATE = GETDATE() 
+				 WHERE MANDT  = '${item.MANDT}' 
+				   AND USERID = '${item.USERID}' 
+				   AND ENDATE IS NULL 
+				
+				DELETE FROM TB_USER 
+				WHERE MANDT   = '${item.MANDT}' 
+				   AND USERID  = '${item.USERID}' 
+				
+				DELETE FROM TB_USERAUTH1 
+				WHERE USERID = '${item.USERID}' 
+				   AND MANDT = '${item.MANDT}'  
+			
+			</foreach>    
+		</if>
+	</delete>
+	
+	<!-- 비밀번호 초기화 -->
+	<select id="user_01Update_PWD_INIT"  parameterType="hashmap"   >
+		EXEC [dbo].[UP_PWD_INIT] 
+		     #{MANDT} ,      --클라이언트
+			 #{USERID}       --사용자ID
+     </select>
+	
+</mapper>

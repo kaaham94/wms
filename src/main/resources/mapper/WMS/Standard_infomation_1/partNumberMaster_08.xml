@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="partNumberMaster_08">
+
+     <select id="partNumberMaster_08Select2" parameterType="hashmap" resultType="hashmap" >
+		[dbo].[UP_P1310_SELECT_R1] 
+			#{MANDT}, 	--클라이언트
+			#{CUSTCD},	--거래처코드
+			#{MATNR},	--WMS코드
+			#{MAKTX},	--품번
+			#{USEFLAG}	--사용유무
+     </select>
+   
+   
+     <select id="partNumberMaster_08Select" parameterType="hashmap" resultType="hashmap" >
+     	<include refid="common.pagingPre"/> 
+			SELECT NULL AS NEWFLAG 
+				<choose>
+					<when test='orderby == "MATNR"'>   , ROW_NUMBER() OVER (ORDER BY A.MATNR) AS rownum  </when>
+					<when test='orderby == "MKDATE"'>  , ROW_NUMBER() OVER (ORDER BY A.MKDATE DESC) AS rownum   --등록일  </when>
+					<when test='orderby == "MODATE"'>  , ROW_NUMBER() OVER (ORDER BY A.MODATE DESC) AS rownum   --수정일  </when>
+				</choose>
+			      , NULL AS SEL 
+			      , A.MATNR 												   --WMS코드
+			      , A.MAKTX                                                    --품번
+			      , A.MAKTXLABEL                                               --라벨품번
+			      , ISNULL(A.MAKTXYURA,'') AS MAKTXYURA                        --유라품번
+			      , '[' + A.MTART + '] ' + C.CODENAME AS CODENAME              --품번유형
+			      , A.MTART AS MTART
+			      , '[' + A.CUSTCD + '] ' + B.CUSTNM AS CUSTNM                 --제조사
+				  , A.CUSTCD AS CUSTCD		                                   
+				  , ISNULL(A.SPEC,'') AS SPEC                                  --구분
+				  , ISNULL(A.MEINS,'') AS MEINS                                --포장단위
+				  , A.UMREZ                                                    --PPQ
+				  , ISNULL(A.MOQ,0) AS MOQ                                     --MOQ
+				  , ISNULL(A.MPQ,0) AS MPQ                                     --MPQ
+				  , ISNULL(A.BOXSIZE,'') AS BOXSIZE                            --BOX SIZE
+				  , ISNULL(A.BOXVOLUME,'') AS BOXVOLUME                        --BOX VOLUME
+				  , ISNULL(A.BOXWEIGHT,'') AS BOXWEIGHT                        --BOX WEIGHT
+				  , ISNULL(A.ERPHKCODE,'') AS ERPHKCODE                        --ERP CODE HK
+				  , ISNULL(A.ERPSRTCODE,'') AS ERPSRTCODE                      --ERP CODE SRT
+				  , A.INSPECTIONFLAG                                           --입고검사 사용유무
+				  , ISNULL(A.INSPECTIONSDATE,'') AS INSPECTIONSDATE            --입고검사 시작일
+				  , ISNULL(A.INSPECTIONEDATE,'') AS INSPECTIONEDATE            --입고검사 종료일
+				  , ISNULL(A.INSPECTIONCOUNT,'') AS INSPECTIONCOUNT            --입고검사 기준횟수
+				  , ISNULL(A.INSPECTIONPROCCOUNT,'') AS INSPECTIONPROCCOUNT    
+				  , A.ELEMENTFLAG                                              --소자여부
+				  , A.USEFLAG                                                  --사용유무
+				  , ISNULL(A.REMARK,'') AS REMARK                              --비고
+			      , ISNULL(DBO.UF_NAME(A.MKUSER),'') AS MKUSER                            
+			      , ISNULL(CONVERT(VARCHAR, A.MKDATE, 23),'') AS MKDATE        
+			      , ISNULL(DBO.UF_NAME(A.MOUSER), '') AS MOUSER   
+			      , ISNULL(CONVERT(VARCHAR, A.MODATE, 23),'') AS MODATE 
+			  FROM TM_MTMAST A WITH (NOLOCK)  
+			       INNER JOIN TM_CUST B WITH (NOLOCK) 
+			                ON B.MANDT = A.MANDT 
+			               AND B.CUSTCD = A.CUSTCD 
+			        LEFT OUTER JOIN TB_CODE C WITH (NOLOCK) 
+			                ON C.CODEGRP = 'M100' 
+			               AND C.CODE = A.MTART 
+			  WHERE A.MANDT =  #{MANDT}  
+			<if test='CUSTCD !=null  and  CUSTCD !=""' >
+				    AND A.CUSTCD LIKE '%${CUSTCD}%'  
+			</if>		
+			<if test='MATNR !=null  and  MATNR !=""' >
+				    AND A.MATNR LIKE '%${MATNR}%'   
+			</if>		
+			<if test='MAKTX !=null  and  MAKTX !=""' >
+				    AND A.MAKTX LIKE '%${MAKTX}%'  
+			</if>		
+			<if test='USEFLAG !=null  and  USEFLAG !=""' >
+				    AND A.USEFLAG = #{USEFLAG} 
+			</if>
+			
+		<include refid="common.pagingPost"/>
+     </select>
+     
+     <select id="partNumberMaster_08Select_CUSTCD" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT  '[' + CUSTCD + '] ' + CUSTNM AS CUSTNM  --거래처코드
+			,CUSTCD AS CUSTCD
+			FROM TM_CUST WITH (NOLOCK)  
+			WHERE MANDT = '100'
+			AND MFLAG = 'Y'
+			ORDER BY CUSTCD 
+     </select>
+     
+     <select id="partNumberMaster_08Select_CODE" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + CODE + '] ' + CODENAME AS  CODENAME 
+			,CODE
+			FROM TB_CODE WITH (NOLOCK)
+			WHERE CODEGRP = 'M100' 
+			AND CODE <![CDATA[<>]]> '$'
+     </select>
+
+  	 <select id="partNumberMaster_08InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P1310_SAVE_R1]
+			#{MANDT}, 			--클라이언트
+			#{MATNR}, 			--WMS코드
+			#{MAKTX}, 			--품번
+			#{MAKTXLABEL},		--라벨품번
+			#{MAKTXYURA},		--유라품번
+			#{MTART}, 			--품번유형
+			#{CUSTCD},			--제조사
+			#{SPEC},			--구분
+			#{MEINS},			--포장단위
+			#{UMREZ},			--PPQ
+			#{MOQ},				--MOQ
+			#{MPQ},				--MPQ
+			#{BOXSIZE},			--BOX SIZE
+			#{BOXVOLUME},		--BOX VOLUME
+			#{BOXWEIGHT},		--BOX WEIGHT
+			#{ERPHKCODE},		--ERP CODE HK
+			#{ERPSRTCODE},		--ERP CODE SRT
+			#{INSPECTIONFLAG},	--입고검사 사용유무
+			#{INSPECTIONSDATE},	--입고검사 시작일
+			#{INSPECTIONEDATE},	--입고검사 종료일
+			#{INSPECTIONCOUNT},	--입고검사 기준횟수
+			#{ELEMENTFLAG},		--소자여부
+			#{USEFLAG},			--사용유무
+			#{REMARK},			--비고
+			#{USERID}, 			--사용자
+			#{NEWFLAG} 			--신규여부
+     </select>
+  
+     
+</mapper>

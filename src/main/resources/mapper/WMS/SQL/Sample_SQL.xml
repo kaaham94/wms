@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="sample">
+
+     <select id="selectBoardList" parameterType="hashmap" resultType="hashmap">
+      <include refid="common.pagingPre"/> 
+        <![CDATA[
+          SELECT number, company, category, name, email, phoneNumber, title, registrant, date, ROW_NUMBER() OVER (ORDER BY DATE desc) AS rownum  
+          	FROM con_1DAY 
+          	WHERE (view_check = 'N' and ${search_detail} like #{search_detail_txt} ) AND
+          	 ( CONVERT(CHAR(10), ${search_dt}, 23)  >= #{search_s_dt_simp}  and  CONVERT(CHAR(10), ${search_dt}, 23) <= #{search_e_dt_simp} )
+        ]]>
+      <include refid="common.pagingPost"/>
+     </select>
+
+     <select id="selectExcelList" parameterType="hashmap" resultType="hashmap">
+        <![CDATA[
+          SELECT * , ROW_NUMBER() OVER (ORDER BY DATE desc) AS rownum  
+          	FROM con_1DAY 
+          	WHERE (view_check = 'N' and ${search_detail} like #{search_detail_txt} ) AND
+          	 ( CONVERT(CHAR(10), ${search_dt}, 23)  >= #{search_s_dt_simp}  and  CONVERT(CHAR(10), ${search_dt}, 23) <= #{search_e_dt_simp} )
+        ]]>
+     </select>
+    
+     <select id="detail" parameterType="hashmap" resultType="hashmap">
+        <![CDATA[
+          select * from con_1day where number = #{number}
+        ]]>
+     </select>
+     
+     <select id="login_check" parameterType="hashmap" resultType="hashmap">
+        <![CDATA[
+          SELECT name FROM haesol_admin_account WHERE id = #{id} AND passwd = #{passwd}
+        ]]>
+     </select>
+ 
+     <insert id="insert" parameterType="hashmap" >
+        <![CDATA[
+		 INSERT INTO con_1DAY
+		   (
+				  NUMBER, company, name, phoneNumber, email, category, title, content, DATE, simple_date, memo
+		   )
+		   VALUES
+		   (
+				 ( SELECT ISNULL(MAX(NUMBER),0)+1 FROM con_1DAY), #{company}, #{name}, #{phoneNumber}, #{email}, #{category}, #{title}, #{content}, GETDATE(), '' , #{memo}
+		   )
+        ]]>
+        <selectKey keyProperty="idx" resultType="Integer" order="AFTER">
+     		SELECT @@ROWCOUNT 
+	    </selectKey>
+     </insert>
+     	 
+     	 
+	 <update id="update" parameterType="hashmap" >
+        <![CDATA[
+        	UPDATE con_1DAY 
+			   SET   company = #{company}
+                   , name = #{name}
+                   , phoneNumber = #{phoneNumber}
+                   , email = #{email}
+                   , category = #{category}
+				   , title = #{title}
+				   , content = #{content}
+				   , memo = #{memo}
+			 WHERE   NUMBER = #{number}
+        ]]>
+     </update>
+     
+     <update id="updateHitCnt" parameterType="hashmap" >
+        <![CDATA[
+          UPDATE con_1DAY 
+			   SET   viewCount =  viewCount + 1
+			 WHERE   NUMBER = #{number}
+        ]]>
+     </update>
+     
+   
+     
+   	<delete id="delete" parameterType="hashmap">
+   		<![CDATA[
+   			DELETE FROM con_1DAY WHERE NUMBER = #{number}
+   		]]>
+   	</delete>
+   	
+   	
+   	<!-- access -->
+   	<select id="selectAccess" parameterType="hashmap" resultType="hashmap">
+        <include refid="common.pagingPre"/> 
+        <![CDATA[
+          SELECT * , ROW_NUMBER() OVER (ORDER BY DATE desc) AS rownum  
+          	FROM haesol_admin_account 
+          	WHERE (view_check = 'N') AND
+          	 ( CONVERT(CHAR(10), ${search_dt}, 23)  >= #{search_s_dt_simp}  and  CONVERT(CHAR(10), ${search_dt}, 23) <= #{search_e_dt_simp} )
+        ]]>
+     	<include refid="common.pagingPost"/>
+     </select>
+     
+     <select id="AccessDetail" parameterType="hashmap" resultType="hashmap">
+        <![CDATA[
+          select * from haesol_admin_account where number = #{number}
+        ]]>
+     </select>
+     
+      <insert id="AccessInsert" parameterType="hashmap" >
+        <![CDATA[ 
+		 INSERT INTO haesol_admin_account
+		   (
+				  NUMBER, id ,passwd, name, position
+		   )
+		   VALUES
+		   (
+				 ( SELECT ISNULL(MAX(NUMBER),0)+1 FROM haesol_admin_account), #{id}, #{passwd}, #{name}, #{position}
+		   )
+        ]]>
+     </insert>
+      
+      <update id="AccessUpdate" parameterType="hashmap" >
+        <![CDATA[
+        	UPDATE haesol_admin_account 
+			   SET  passwd = #{passwd}
+			       , name = #{name}
+			       , position = #{position}
+			       , modified_date = GETDATE()
+				   , view_check = 'N'
+			 WHERE   NUMBER = #{number}
+        ]]>
+     </update>
+    
+     <delete id="AccessDelete" parameterType="hashmap">
+   		<![CDATA[
+   			DELETE FROM haesol_admin_account WHERE NUMBER = #{number}
+   		]]>
+
+   	</delete>
+   	
+   	<select id="AccessExcelList" parameterType="hashmap" resultType="hashmap">
+        <![CDATA[
+          SELECT * , ROW_NUMBER() OVER (ORDER BY DATE desc) AS rownum  
+          	FROM haesol_admin_account 
+          	WHERE (view_check = 'N' ) AND
+          	 ( CONVERT(CHAR(10), ${search_dt}, 23)  >= #{search_s_dt_simp}  and  CONVERT(CHAR(10), ${search_dt}, 23) <= #{search_e_dt_simp} )
+        ]]>
+        
+     </select>
+     
+   	 <select id="IdCheckAccount" parameterType="hashmap" resultType="hashmap">
+        <![CDATA[
+         SELECT  'return_id'  =  CASE WHEN COUNT(*) = 0 THEN 'null'  ELSE #{id} end 
+		FROM haesol_admin_account 
+		WHERE id = #{id}    
+		 ]]>
+     </select>
+     
+     <update id="updateIP" parameterType="hashmap" >
+        <![CDATA[
+          UPDATE haesol_admin_account 
+			SET   ipAdd =  #{ip},
+				  recent_visit = CONVERT(VARCHAR, GETDATE(), 120) 
+			WHERE id = #{id} AND passwd = #{passwd}
+        ]]>
+     </update>
+</mapper>

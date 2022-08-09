@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="groupAuthority_03">
+
+	<select id="groupAuthority_03Select_right" parameterType="hashmap" resultType="hashmap" >
+		SELECT a.menuid, 	--메뉴ID
+			  COUNT(*) OVER() AS TOTAL_COUNT, 
+			  '' AS rowspan,
+			<choose>
+				<when test='language == "KOREAN"'> 
+					B.KORMENUNAME AS MENUNAME,	--메뉴명
+					A.KORPROGNAME AS PROGNAME,	--화면명
+				</when>		
+				<when test='language == "ENGLISH"'> 
+					B.ENGMENUNAME AS MENUNAME,
+					A.ENGPROGNAME AS PROGNAME,
+				</when>
+				<when test='language == "CHINESE"'> 
+					B.CHIMENUNAME AS MENUNAME,
+					A.CHIPROGNAME AS PROGNAME,
+				</when>
+			</choose>
+		   a.PROGID, 	--화면ID
+		   CASE WHEN ISNULL(a.FINDFLAG,'0') NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.findgrant,'0') END AS FINDGRANT, --조회
+		   CASE WHEN ISNULL(a.NEWFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.NEWGRANT,'0')  END AS NEWGRANT,  --신규
+		   CASE WHEN ISNULL(a.SAVEFLAG,'0') NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.SAVEGRANT,'0') END AS SAVEGRANT, --저장
+		   CASE WHEN ISNULL(a.DELFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.DELGRANT,'0')  END AS DELGRANT,  --삭제
+		   CASE WHEN ISNULL(a.EXPFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.EXPGRANT,'0')  END AS EXPGRANT,  --엑셀
+		   CASE WHEN ISNULL(a.PRTFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.PRTGRANT,'0')  END AS PRTGRANT,  --출력
+		   ISNULL(c.UPDUSER, '') AS UPDUSER,
+		   DBO.FN_StrDate(c.UPDDATE1) AS UPDDATE1 --수정일
+		FROM tb_prog a with (nolock) JOIN tb_menu b with (nolock) ON a.menuid = b.menuid 
+			   LEFT OUTER JOIN TB_USERGROUPAUTH c with (nolock) ON a.progid = c.progid 
+					AND c.rollid = #{ROLLID}
+					AND c.MANDT = #{MANDT}
+		WHERE A.USEFLAG = 'Y' 
+		ORDER BY b.sortkey, b.menuid, a.sortkey, a.progid 
+    </select>
+	
+	
+	<select id="groupAuthority_03Select_left" parameterType="hashmap" resultType="hashmap" >
+		SELECT CODE, CODENAME, ETC 
+		  FROM TB_CODE with (nolock) 
+		 WHERE CODEGRP = 'AUTH' 
+		   AND USEFLAG = 'Y' 
+		   AND CODE <![CDATA[<>]]> '$' 
+		 ORDER BY 1 
+	</select>
+	
+	
+	<update id="groupAuthority_03InsertUpdate"  parameterType="hashmap">
+		<if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+				DELETE FROM TB_USERGROUPAUTH 
+				 WHERE ROLLID = '${item.ROLLID}'  --그룹ID 
+				   AND PROGID = '${item.PROGID}'  --화면ID  
+				   AND MANDT = '${item.MANDT}'    --클라이언트  
+					
+				INSERT INTO TB_USERGROUPAUTH 
+				(
+					   MANDT   ,  
+					   ROLLID   ,        -- 권한그룹ID 
+					   PROGID   ,        -- 프로그램ID 
+					   FINDGRANT,        -- 조회권한:I(등록),U(업데이트),D(삭제) 
+					   NEWGRANT ,   	 -- 신규권한
+					   SAVEGRANT,  		 -- 저장권한
+					   DELGRANT ,   	 -- 삭제권하
+					   EXPGRANT ,  		 -- 엑셀권한
+					   PRTGRANT ,  		 -- 출력권한
+					   UPDUSER  ,        -- 수정자 
+					   UPDDATE1 ,        -- 수정일시 
+					   UPDDATE2          -- 수정일시 
+				)
+				VALUES (
+						'${item.MANDT}'   , 
+						'${item.ROLLID}'   ,
+						'${item.PROGID}'   ,
+						'${item.FINDGRANT}',
+						'${item.NEWGRANT}' ,
+						'${item.SAVEGRANT}',
+						'${item.DELGRANT}' ,
+						'${item.EXPGRANT}' ,
+						'${item.PRTGRANT}' ,
+						'${item.UPDUSER}'  ,
+						(CONVERT([varchar](8),getdate(),(112))),
+						(replace(CONVERT([varchar](8),getdate(),(108)),':','')) 
+				)
+
+				delete from tb_userauth1
+				 where userid in ('${item.UPDUSER}')
+				   AND progid = '${item.PROGID}'  --화면ID  
+				   AND MANDT = '${item.MANDT}'    --클라이언트  
+ 
+				INSERT INTO TB_USERAUTH1 
+				(
+					   MANDT   ,        
+					   USERID   ,        
+					   PROGID   ,   --프로그램ID 
+					   FINDGRANT,   --조회권한:I(등록),U(업데이트),D(삭제) 
+					   NEWGRANT ,   --신규
+					   SAVEGRANT,   --저장
+					   DELGRANT ,   --삭제
+					   EXPGRANT ,   --엑셀
+					   PRTGRANT ,   --출력
+					   UPDUSER  ,   --수정자 
+					   UPDDATE1 ,   --수정일시 
+					   UPDDATE2     --수정일시 
+				) 
+				VALUES (
+					   '${item.MANDT}'	  , 
+					   '${item.UPDUSER}'  , 
+					   '${item.PROGID}'   ,
+					   '${item.FINDGRANT}',
+					   '${item.NEWGRANT}' ,
+					   '${item.SAVEGRANT}',
+					   '${item.DELGRANT}' ,
+					   '${item.EXPGRANT}' ,
+					   '${item.PRTGRANT}' ,
+					   '${item.UPDUSER}'  ,
+					   (CONVERT([varchar](8),getdate(),(112))),
+					   (replace(CONVERT([varchar](8),getdate(),(108)),':','')) 
+				)   
+			</foreach>    
+		</if>
+     </update>
+	 
+</mapper>

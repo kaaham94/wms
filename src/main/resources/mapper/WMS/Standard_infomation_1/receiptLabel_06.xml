@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="receiptLabel_06">
+
+     <select id="receiptLabel_06Select2" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P1120_SELECT] 
+			#{MANDT}, 		
+			#{CUSTCD}, 
+			#{CUSTNM},	
+			#{BARTYPE}, 	
+			#{USEFLAG}  		
+     </select>
+   
+   
+     <select id="receiptLabel_06Select" parameterType="hashmap" resultType="hashmap" >
+	  	SELECT NULL AS NEWFLAG 
+	      , NULL AS SEL 
+	      , COUNT(*) OVER() AS TOTAL_COUNT
+	      , '[' + A.CUSTCD + '] ' + B.CUSTNM AS CUSTCD  --거래처코드
+	      , A.CUSTCD AS CUSTCD_CODE
+	 	  , A.CTYPE  --라벨종류
+	 	  , '[' + A.BARTYPE + '] ' + ISNULL(C.CODENAME, '') AS BARTYPE  --바코드타입
+	 	  , CASE WHEN A.PINPUT = 'Y' THEN -1 ELSE NULL END AS PINPUT --코드 수기입력
+	 	  , ISNULL(A.PSPLITSTRING, '') AS PSPLITSTRING  --조회제거문자
+	 	  , ISNULL(A.PPREFIX, '') AS PPREFIX   --전구분자
+	 	  , ISNULL(A.PLASTFIX, '') AS PLASTFIX  --후구분자
+	 	  , ISNULL(A.PLENGTH, '') AS PLENGTH    --길이
+	 	  , CASE WHEN A.QINPUT = 'Y' THEN -1 ELSE NULL END AS QINPUT  --Q코드 수기입력
+	 	  , ISNULL(A.QPREFIX, '') AS QPREFIX  --전구분자
+	 	  , ISNULL(A.QLASTFIX, '') AS QLASTFIX  --후구분자
+	 	  , ISNULL(A.QLENGTH, '') AS QLENGTH   --길이
+	 	  , CASE WHEN A.SINPUT = 'Y' THEN -1 ELSE NULL END AS SINPUT  --S코드 수기입력
+	 	  , ISNULL(A.SDATETYPE, '') AS SDATETYPE --일자타입
+	 	  , ISNULL(A.SPREFIX, '') AS SPREFIX  	--전구분자
+	 	  , ISNULL(A.SLASTFIX, '') AS SLASTFIX   --후구분자
+	      , ISNULL('[' + A.IMAGECODE + '] ' + D.IMAGENAME, '') AS IMAGECODE --이미지코드
+	      , ISNULL(A.IMAGECODE, '') AS IMAGECODE_CODE --이미지코드 키값
+	      , '' AS IMAGEVIEW --이미지
+	 	  , CASE WHEN A.CMATNRFLAG = 'Y' THEN -1 ELSE NULL END AS CMATNRFLAG  --거래처품번매핑처리
+	 	  , A.USEFLAG  --사용유무
+	 	  , ISNULL(A.REMARK, '') AS REMARK  --비고
+	 	  , ISNULL(A.EXBARDATA, '') AS EXBARDATA  --바코드예제
+	      , ISNULL(CONVERT(CHAR(10),A.MKDATE, 23),'') AS MKDATE   --등록일
+	      , ISNULL(DBO.UF_NAME(A.MKUSER), '') AS MKUSER  --등록자
+	      , ISNULL(CONVERT(CHAR(10),A.MODATE, 23),'') AS MODATE  --수정일
+	      , ISNULL(DBO.UF_NAME(A.MOUSER), '') AS MOUSER  --수정자
+	   FROM TB_CUSTLABEL A WITH (NOLOCK)  
+	        INNER JOIN TM_CUST B WITH (NOLOCK) 
+	                ON B.MANDT = A.MANDT 
+	               AND B.CUSTCD = A.CUSTCD 
+	        LEFT OUTER JOIN TB_CODE C WITH (NOLOCK) 
+	                ON C.CODEGRP = 'BARTYPE' 
+	               AND C.CODE = A.BARTYPE 
+	        LEFT OUTER JOIN TB_IMAGE D WITH (NOLOCK) 
+	                ON D.IMAGECODE = A.IMAGECODE 
+	  	WHERE A.MANDT = #{MANDT}  
+		<if test='CUSTCD !=null  and  CUSTCD !=""' >
+			AND A.CUSTCD LIKE N'%${CUSTCD}%'
+		</if>
+		<if test='CUSTNM !=null  and  CUSTNM !=""' >
+			AND B.CUSTNM LIKE N'%${CUSTNM}%' 
+		</if>
+		<if test='BARTYPE !=null  and  BARTYPE !=""' >
+			AND A.BARTYPE = #{BARTYPE} 
+		</if>
+		<if test='USEFLAG !=null  and  USEFLAG !=""' >
+			AND A.USEFLAG = #{USEFLAG} 
+		</if>
+		
+		<choose>
+			<when test='orderby == "CUSTCD"'>  ORDER BY A.CUSTCD, A.CTYPE  </when>
+			<when test='orderby == "MKDATE"'>  ORDER BY A.MKDATE DESC  --등록일  </when>
+			<when test='orderby == "MODATE"'>  ORDER BY A.MODATE DESC  --수정일  </when>
+		</choose>
+     </select>
+     
+     
+     <select id="receiptLabel_06Select_VIEWIMAGE" parameterType="hashmap" resultType="hashmap" >
+	       SELECT ISNULL('[' + A.IMAGECODE + '] ' + A.IMAGENAME, '') AS IMAGECODE --이미지코드
+	       , A.IMAGECODE AS IMAGECODE_CODE --이미지코드 키값  
+		   FROM TB_IMAGE A WITH (NOLOCK)  
+		   WHERE A.MANDT = #{MANDT}
+		   UNION
+		   SELECT '', ''
+     </select>
+     
+     <select id="receiptLabel_06Select_BARTYPE" parameterType="hashmap" resultType="hashmap" >
+	       SELECT '[' + C.CODE + '] ' + ISNULL(C.CODENAME, '') AS BARTYPE  --바코드타입
+	       , C.CODE AS BARTYPE_CODE
+		   FROM TB_CODE C WITH (NOLOCK)  
+		   WHERE C.CODEGRP = 'BARTYPE' 
+			 AND C.CODE <![CDATA[<>]]> '$'
+		   ORDER BY C.CODE
+     </select>
+     
+     <select id="receiptLabel_06Select_CUSTCD" parameterType="hashmap" resultType="hashmap" >
+	       	SELECT  '[' + B.CUSTCD + '] ' + B.CUSTNM AS CUSTCD  --거래처코드
+			,B.CUSTCD AS CUSTCD_CODE
+			FROM TM_CUST B WITH (NOLOCK)  
+			WHERE B.MANDT = '100'
+			AND MFLAG = 'Y'
+				   
+			ORDER BY CUSTCD 
+     </select>
+     
+     <select id="receiptLabel_06Select_SDATETYPE" parameterType="hashmap" resultType="hashmap" >
+	       	select 'DD/MM/YY' as 'SDATETYPE' 
+					 union
+					select 'DD/MM/YYYY' 
+					 union
+					select 'DDMMYYYY' 
+					 union
+					select 'MM/DD/YY' 
+					 union
+					select 'YYMMDD'
+					union
+					select 'YYWW'
+					union
+					select 'YYWWN'
+					union
+					select 'YYYY/MM/DD'
+					union
+					select 'YYYYMMDD'
+     </select>
+
+  	 <select id="receiptLabel_06InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+		  	EXEC [dbo].[UP_P1120_SAVE] 
+			    #{MANDT}, 		 --클라이언트
+				#{CUSTCD}, 		 --거래처코드
+				#{CTYPE}, 		 --라벨종류
+				#{BARTYPE}, 	 --바코드타입
+				#{PINPUT}, 		 --P코드 수기입력
+				#{PSPLITSTRING}, --조회제거문자
+				#{PPREFIX}, 	 --전구분자
+				#{PLASTFIX}, 	 --후구분자
+				#{PLENGTH}, 	 --길이
+				#{QINPUT}, 		 --Q코드 수기입력
+				#{QPREFIX}, 	 --전구분자
+				#{QLASTFIX}, 	 --후구분자
+				#{QLENGTH}, 	 --길이
+				#{SINPUT}, 		 --S코드 수기입력
+				#{SPREFIX}, 	 --전구분자
+				#{SLASTFIX}, 	 --후구분자
+				#{SDATETYPE}, 	 --일자타입
+				#{IMAGECODE},	 --이미지코드
+				#{CMATNRFLAG},	 --거래처품번매핑처리
+				#{USEFLAG},		 --사용유무
+				#{REMARK},		 --비고
+				#{EXBARDATA},	 --바코드예제
+				#{USERID}, 		 --사용자
+				#{NEWFLAG}	 	 --신규여부
+     </select>
+  
+</mapper>

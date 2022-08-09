@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="imageReference_05">
+
+     <select id="imageReference_05Select2" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P1150_SELECT] 
+			#{MANDT}, 		-- 클라이언트
+			#{IMAGECODE}, 	-- 이미지코드
+			#{IMAGENAME},	-- 이미지명
+			#{USEFLAG}, 	-- 사용유무
+			#{LANG}  		-- 'KOREAN'
+     </select>
+   
+   
+     <select id="imageReference_05Select" parameterType="hashmap" resultType="hashmap" >
+	  	SELECT '' AS NEWFLAG
+		     , '' AS SEL
+		     , COUNT(*) OVER() AS TOTAL_COUNT
+		     , A.IMAGECODE		-- 이미지코드
+		     , A.IMAGENAME		-- 이미지명
+		     , A.FILENAME		-- 파일명
+		     , '' AS FILEPATH	-- 파일경로
+		     , '' AS IMAGEADD	
+		     , '' AS IMAGEVIEW
+		     , A.USEFLAG
+		     , A.REMARK
+		     , ISNULL(DBO.FN_USERNAME(A.MAKEUSERID), '') AS MAKEUSER
+		     , convert(date, A.MAKESTAMP ) AS MAKESTAMP
+		     , ISNULL(DBO.FN_USERNAME(A.EDITUSERID), '') AS EDITUSER
+		     , ISNULL(convert(varchar, A.EDITSTAMP , 120),'') AS EDITSTAMP
+		 FROM TB_IMAGE A
+		 WHERE 1 = 1
+		   	AND A.MANDT = #{MANDT} 
+		<if test='IMAGECODE !=null  and  IMAGECODE !=""' >   
+			<choose>
+				<when test='IMAGECODE.equals("%")'>
+					AND A.IMAGECODE LIKE N'%${IMAGECODE}%' 
+				</when>
+				<otherwise>
+					AND A.IMAGECODE = #{IMAGECODE}
+				</otherwise>
+			</choose>
+		</if>   
+		<if test='IMAGENAME !=null  and  IMAGENAME !=""' >   
+				AND A.IMAGENAME LIKE N'%${IMAGENAME}%' 
+		</if>	
+		<if test='USEFLAG !=null  and  USEFLAG !=""' >
+				 AND A.USEFLAG = #{USEFLAG} 
+		</if>	
+		
+		<choose>
+			<when test='orderby == "IMAGECODE"'>  ORDER BY A.IMAGECODE </when>
+			<when test='orderby == "MAKESTAMP"'>  ORDER BY A.MAKESTAMP desc </when>
+			<when test='orderby == "EDITSTAMP"'>  ORDER BY A.EDITSTAMP desc</when>
+		</choose>	
+			
+     </select>
+     
+     
+     <select id="imageReference_05Select_VIEWIMAGE" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT VIEWIMAGE
+			FROM TB_IMAGE
+	     	WHERE MANDT = #{MANDT} 
+	     	AND IMAGECODE = #{IMAGECODE}
+     </select>
+     
+
+  	 <select id="imageReference_05InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+		  EXEC [dbo].[UP_P1150_SAVE_R1] 
+			    #{MANDT},    	-- 클라이언트                  
+		      	#{IMAGECODE},   -- 이미지코드          
+		        #{IMAGENAME},   -- 이미지명               
+		        #{FILENAME},    -- 파일명               
+		        #{VIEWIMAGE},   -- 이미지                  
+		        #{IMAGEEDIT},   -- 이미지 존재여부	             
+		        #{USEFLAG},    	-- 사용유무            
+		        #{REMARK},    	-- 비고        
+		        #{USERID},    	-- 사용자 
+		        #{NEWFLAG},   	-- 신규여부  
+		        #{RTNMSG}    	-- 리턴 메세지 
+     </select>
+  
+     
+</mapper>

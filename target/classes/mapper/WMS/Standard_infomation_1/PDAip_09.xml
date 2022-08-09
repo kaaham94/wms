@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PDAip_09">
+
+     <select id="PDAip_09Select" parameterType="hashmap" resultType="hashmap" >
+			SELECT	A.IPADDR, --IP(키값)
+					'' AS SEL,
+					COUNT(*) OVER() AS TOTAL_COUNT,
+					A.MANDT AS MANDT,
+					A.WERKS AS WERKS, -- 법인
+					ISNULL(DBO.FN_GETCODENAME('WERKS', A.MANDT, A.WERKS),'') AS MWERKSNM, --법인명
+					ISNULL(A.LGORT,'') AS LGORT, --저장위치
+					ISNULL(DBO.FN_GETCODENAME2('LGORT', A.MANDT, A.WERKS, A.LGORT),'') AS LGORTNM, --저장위치명
+					ISNULL(A.USERNM,'') AS USERNM, 		-- 사용자
+					CASE WHEN STCON = 'Y' THEN -1 ELSE '' END AS STCON, --실사 세팅된 IP만 보기 체크
+					DBO.FN_GET_IP(A.IPADDR) SORTIP
+			FROM   TB_IPMASTER A with (nolock)
+			WHERE  1 = 1
+			<if test='WERKS !=null  and  WERKS !=""' >
+				AND	A.WERKS = #{WERKS}			--법인코드
+			</if>
+			<if test='IPADDR !=null  and  IPADDR !=""' >
+				AND	A.IPADDR LIKE '${IPADDR}%'  --IP			 
+			</if>
+			<if test='STCON !=null  and  STCON !=""' >
+				AND	A.STCON = 'Y'				--실사 세팅된 IP만 보기 체크된경우만	
+			</if>
+			<choose>
+				<when test='orderby == "SORTIP"'> ORDER BY SORTIP </when>
+				<when test='orderby == "CRTIME"'> ORDER BY A.CRTIME DESC </when>
+				<when test='orderby == "EDTIME"'> ORDER BY A.EDTIME DESC</when>
+			</choose>
+    </select>
+	
+	<select id="PDAip_09Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + WERKS + '] ' + PLANTNAME AS PLANTNAME 
+	     		, WERKS AS WERKS
+			FROM TM_PLANT
+	     	WHERE MANDT = #{MANDT}
+	     		AND USEFLAG <![CDATA[<>]]> 'N'   
+	     	ORDER BY WERKS
+    </select>
+	
+	<select id="PDAip_09Select_LGORT" parameterType="hashmap" resultType="hashmap" >
+	    SELECT '[' + LGORT + '] ' + isnull(SLNAME,'')  AS SLNAME
+	    		,LGORT
+		FROM TM_STORELOC with (nolock) 
+		WHERE MANDT = #{MANDT}
+		<if test='WERKS !=null  and  WERKS !=""' >
+			AND	WERKS = #{WERKS}			--법인코드
+		</if>			
+		AND USEFLAG = 'Y' 
+		UNION
+		SELECT '',''
+		ORDER BY LGORT    
+		
+	</select>
+	
+	<select id="PDAip_09InsertUpdateCheck_IPADDR" parameterType="hashmap" resultType="Integer" >
+	 	select count(*) as CNT 
+	 	from TB_IPMASTER 	
+		where IPADDR = #{IPADDR}
+    </select>
+	
+	<insert id="PDAip_09Insert"  parameterType="hashmap"  >
+   		<if test="staffList.size != 0">
+	   			INSERT INTO TB_IPMASTER
+				(MANDT, IPADDR, WERKS, LGORT, CRTIME)
+				VALUES
+			<foreach collection="staffList" item="item" separator="," >   
+				( 
+						'${item.MANDT}',		--클라이언트
+						'${item.IPADDR}',		--IP	
+						'${item.WERKS}',		--법인코드
+						'${item.LGORT}',		--저장위치코드
+						 getdate()
+				)
+	   		</foreach>    
+   		</if>
+     </insert>
+	 
+	 <update id="PDAip_09Update"  parameterType="hashmap"   >
+		<if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+				UPDATE TB_IPMASTER
+				SET	MANDT = '${item.MANDT}',  	--클라이언트
+					WERKS = '${item.WERKS}',  	--법인코드
+					LGORT = '${item.LGORT}',	 --저장위치코드
+					EDTIME = getdate()  	
+				WHERE IPADDR = '${item.IPADDR}' --IP
+			</foreach>    
+		</if>
+     </update>
+	 
+	 <delete id="PDAip_09Delete" parameterType="hashmap">
+	     <if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+			    DELETE FROM TB_IPMASTER
+				WHERE IPADDR = '${item.IPADDR}' --IP
+			</foreach>    
+		</if>
+	</delete>
+  
+     
+</mapper>

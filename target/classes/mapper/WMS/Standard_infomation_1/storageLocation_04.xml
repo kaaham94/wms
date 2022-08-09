@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="storageLocation_04">
+
+     <select id="storageLocation_04Select2" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P1231_SELECT_R1] 
+			#{MANDT}, 	-- 클라이언트
+			#{WERKS}, 	-- 법인코드
+			#{LGORT},	-- 저장위치코드
+			#{SLNAME}, 	-- 저장위치명
+			#{USEFLAG}  -- 사용유무
+     </select>
+   
+   
+     <select id="storageLocation_04Select" parameterType="hashmap" resultType="hashmap" >
+			SELECT NULL AS NEWFLAG --신규여부
+			   	, '' AS SEL 
+			   	, COUNT(*) OVER() AS TOTAL_COUNT
+			   	, '[' + A.WERKS + '] ' + B.PLANTNAME AS PLANTNAME --법인코드(키값)
+			   	, A.WERKS
+			   	, A.LGORT  	--저장위치코드(키값)
+			   	, A.SLNAME  --저장위치명
+			   	, A.CYFLAG  --외주여부
+			   	, A.USEFLAG --사용유무
+			 	, ISNULL(A.REMARK, '') AS REMARK  					--비고
+			    , ISNULL(DBO.UF_NAME(A.MKUSERID), '') AS MKUSERID  	--등록자
+			    , DBO.FN_STRDATE(A.MKDATE) AS MKDATE 				--등록일
+			    , ISNULL(DBO.UF_NAME(A.UPDUSER), '') AS EDITOR   	--수정자
+			    , DBO.FN_STRDATE(A.UPDDATE1) AS EDITDATE			--수정일
+			FROM TM_STORELOC A WITH (NOLOCK)  
+				INNER JOIN TM_PLANT B WITH (NOLOCK) 
+			    	ON B.MANDT = A.MANDT 
+			        AND B.WERKS = A.WERKS     
+			WHERE A.MANDT = #{MANDT} --클라이언트
+			  
+			<if test='WERKS !=null  and  WERKS !=""' >
+				AND A.WERKS = #{WERKS}  
+			</if>
+			<if test='LGORT !=null  and  LGORT !=""' >
+				AND A.LGORT LIKE '%${LGORT}%'   
+			</if>
+			<if test='SLNAME !=null  and  SLNAME !=""' >
+				AND A.SLNAME LIKE N'%${SLNAME}%'   
+			</if>
+			<if test='USEFLAG !=null  and  USEFLAG !=""' >
+				AND A.USEFLAG = #{USEFLAG}  
+			</if>
+			<choose>
+				<when test='orderby == "CUSTCD"'>  ORDER BY A.LGORT, A.WERKS	-- 저장위치코드,법인코드 </when>
+				<when test='orderby == "MKDATE"'>  ORDER BY A.MKDATE DESC, A.MKSTAMP DESC	-- 등록일  </when>
+				<when test='orderby == "EDITDATE"'>  ORDER BY A.UPDDATE1 DESC	-- 수정일  </when>
+			</choose>	
+			   
+     </select>
+     
+     
+     <select id="storageLocation_04Select_PLANTNAME" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + WERKS + '] ' + PLANTNAME AS PLANTNAME 
+	     		, WERKS AS WERKSCODE
+			FROM TM_PLANT
+	     	WHERE MANDT = #{MANDT}
+	     	ORDER BY WERKS
+     </select>
+     
+
+  	 <select id="storageLocation_04InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+		  EXEC [dbo].[UP_P1231_SAVE_R1] 
+			    #{MANDT},     -- 클라이언트                  
+		      	#{WERKS},     -- 법인코드          
+		        #{LGORT},     -- 저장위치코드               
+		        #{SLNAME},    -- 저장위치명               
+		        #{CYFLAG},    -- 외주여부                  
+		        #{USEFLAG},   -- 사용유무	             
+		        #{REMARK},    -- 비고             
+		        #{USERID},    -- 사용자       
+		        #{NEWFLAG}    --  신규여부
+     </select>
+  
+     
+</mapper>

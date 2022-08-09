@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="warehousingOfMaterialsRequestManagement_01">
+	
+	<!-- 하위테이블 -->
+	<select id="warehousingOfMaterialsRequestManagement_01Select_bottom" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P2114_SELECT_R6] -- 조회 리스트 
+			#{MANDT},	  --CHAR(3) = '100',	--클라이언트
+			#{WERKS},	  --VARCHAR(20) = '',	--법인
+			#{LGORT},	  --VARCHAR(10) = '',	--저장위치
+			#{LIFNR},	  --VARCHAR(20) = '',	--제조사
+			#{MAKTX},	  --NVARCHAR(100) = '',	--품번
+			#{CUSTCD},	  --NVARCHAR(100) = '',	--거래처
+			#{EBELN},	  --VARCHAR(50) = '',	--입고요청번호
+			#{MKUSER},	  --NVARCHAR(100) = '',	--작성자
+			#{SBEDAT},	  --VARCHAR(10) = '',	--입고요청일
+			#{EBEDAT},	  --VARCHAR(10) = '',	--입고요청일
+			#{SEINDT},	  --VARCHAR(10) = '',	--입고예정일
+			#{EEINDT},	  --VARCHAR(10) = '',	--입고예정일
+			#{DATEFLAG},  --VARCHAR(1) = '',	--입고요청일(B) / 입고예정일(E)
+			#{VIEWALL},	  --VARCHAR(1) = 'N',	--미마감전체조회(Y/N)
+			#{USERID}	  --VARCHAR(20)			--사용자
+	</select>
+	
+    <!-- 우측 -->
+	<select id="warehousingOfMaterialsRequestManagement_01Select_right" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P9182_SELECT_D_R2] 
+			#{MANDT},	--CHAR(3),
+			#{WERKS}, 	--VARCHAR(4) = '',	 법인
+			#{LGORT},  	--VARCHAR(4) = '',	 저장위치
+			#{ARBPL}, 	--VARCHAR(8) = '',	 작업장
+			#{SUDAT_S}, --VARCHAR(8),		 수불일자_S
+			#{SUDAT_E}, --VARCHAR(8),		 수불일자_E
+			#{CRDTC_S}, --VARCHAR(8),		 실적일자_S
+			#{CRDTC_E}, --VARCHAR(8),		 실적일자_E
+			#{MATNR}, 	--NVARCHAR(100) = '',품목
+			#{LIFNR}, 	--VARCHAR(10) = '',	 공급처
+			#{SEQ}, 	--VARCHAR(1) = '1',	 주야간
+			#{HH}, 		--INT,				 시간
+			#{BWART_1}, --CHAR(1) = 'N',   	 현창입고
+			#{BWART_2}, --CHAR(1) = 'Y',  	 구매입고
+			#{BWART_3}, --CHAR(1) = 'N',   	 이전입고
+			#{BWART_4}, --CHAR(1) = 'N',     기타입고
+			#{USERID}	--VARCHAR(20)		 사용자
+    </select>
+	
+	<!-- 우측하단 -->
+	<select id="warehousingOfMaterialsRequestManagement_01Select_right_bottom"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P9182_SELECT_DD2_R2] 
+			#{MANDT}, 
+			#{WERKS},    --법인
+			#{LGORT},    --저장위치
+			#{ARBPL},    --작업장
+			#{SUDAT_S},  --수불일자_S
+			#{SUDAT_E},  --수불일자_E
+			#{CRDTC_S},  --실적일자_S
+			#{CRDTC_E},  --실적일자_E
+			#{MATNR},    --품목
+			#{LIFNR},    --공급처
+			#{SEQ},      --주야간
+			#{HH},		 --시간
+			#{BWART_1},	 --현창입고
+			#{BWART_2},	 --구매입고
+			#{BWART_3},	 --이전입고
+			#{BWART_4},	 --기타입고
+			#{USERID}	 --사용자
+     </select>
+	
+ 	<!-- 저장위치 -->    
+	<select id="warehousingOfMaterialsRequestManagement_01Select_LGORT" parameterType="hashmap" resultType="hashmap" >
+		<choose>
+			<when test='WERKS !=null  and  WERKS !=""'>
+				SELECT '[' + LGORT + '] ' + isnull(SLNAME,'')  AS SLNAME
+					,LGORT
+				FROM TM_STORELOC with (nolock) 
+				WHERE MANDT = #{MANDT}
+					AND	WERKS = #{WERKS}			--법인코드
+					AND USEFLAG = 'Y' 
+				UNION
+				SELECT '',''
+				ORDER BY LGORT   
+			</when>
+			<otherwise>
+				SELECT '' AS SLNAME, '' AS LGORT
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 법인 -->
+	<select id="warehousingOfMaterialsRequestManagement_01Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + werks + '] ' + isnull(plantname,'')  AS PLANTNAME
+			, WERKS AS WERKS
+			  FROM tm_plant with (nolock) 
+			 WHERE MANDT = #{MANDT}
+			   AND USEFLAG <![CDATA[<>]]> 'N'
+			   UNION
+			  SELECT '',''
+			 ORDER BY werks
+	</select>
+	
+	<!-- 공급처 -->
+ 	<select id="warehousingOfMaterialsRequestManagement_01Select_CUSTCD" parameterType="hashmap" resultType="hashmap" >
+			 SELECT '[' + DBO.FN_CONVCODE(CUSTCD,'') + '] ' + CUSTNM  AS LIFNRNAME
+					,CUSTCD AS LIFNR
+			 FROM TM_CUST WITH (NOLOCK) 
+			 WHERE MANDT = '100' 
+			   AND UseFlag = N'Y'
+			 	UNION
+			 	SELECT '',''
+			 ORDER BY 1 
+	</select>
+	
+	<!-- 제조사 -->
+ 	<select id="warehousingOfMaterialsRequestManagement_01Select_LIFNR" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + DBO.FN_CONVCODE(CUSTCD,'') + '] ' + CUSTNM AS CUSTCDNAME
+					,CUSTCD
+			FROM TM_CUST WITH (NOLOCK) 
+			WHERE MANDT = '100' 
+			   AND MFLAG = 'Y' 
+			   AND UseFlag = N'Y' 
+			   UNION
+			   SELECT '',''
+			ORDER BY 1 
+			
+	</select>
+	
+	<!-- 출하예정처 -->
+ 	<select id="warehousingOfMaterialsRequestManagement_01Select_OUTCUST" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + DBO.FN_CONVCODE(CUSTCD,'') + '] ' + CUSTNM  AS OUTCUST
+				,DBO.FN_CONVCODE(CUSTCD,'') AS OUTCUSTCODE
+			FROM TM_CUST WITH (NOLOCK) 
+			WHERE MANDT = '100' 
+			   AND UseFlag = N'Y'
+			   AND OFLAG = 'Y'
+			 	UNION
+			 	SELECT '',''
+			ORDER BY 2 
+	</select>
+		 
+	<!-- 출고유형 -->
+ 	<select id="warehousingOfMaterialsRequestManagement_01Select_LFART" parameterType="hashmap" resultType="hashmap" >
+			select N'[YH] YH' as 'LFART' , 'YH' as 'LFARTCODE'
+			union
+			select N'[SE] SRT 기타' ,'SE'
+			union
+			select N'[RT] 반품출고' ,'RT'
+			union
+			select N'[IM] 도입자재' ,'IM'
+			union
+			select N'[HE] HK 기타' ,'HE'
+			union
+			select N'[DR] DRT' ,'DR'
+	</select>	 
+</mapper>

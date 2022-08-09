@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="menu_02">
+
+	 <select id="menu_02Select" parameterType="hashmap" resultType="hashmap" >
+		SELECT  NULL SEQ,
+				COUNT(*) OVER() AS TOTAL_COUNT,
+			  A.SORTKEY, 		--정렬순서
+			  A.MENUID,			--메뉴ID
+			  A.MENUSTEP,		--수준코드
+			  A.KORMENUNAME,	--한국어메뉴명
+			  ISNULL(A.ENGMENUNAME,'') AS ENGMENUNAME,	--영어메뉴명
+			  ISNULL(A.CHIMENUNAME,'') AS CHIMENUNAME,	--중국어메뉴명
+			  ISNULL(A.BEFMENUID, '$') AS BEFMENUID,	--상위메뉴ID
+			  ISNULL(A.ETC,'') AS ETC,	--기타
+			  A.USEFLAG,	--사용유무 
+			  ISNULL(DBO.FN_USERNAME(A.UPDUSER),'') AS UPDUSER,	--수정자 
+			  DBO.FN_STRDATE(A.UPDDATE1) AS UPDDATE1
+		FROM  TB_MENU A with (nolock)
+		WHERE  1 = 1
+			<if test='BEFMENUID !=null  and  BEFMENUID !=""' >
+				AND  A.BEFMENUID = #{BEFMENUID} 	--상위메뉴
+			</if>
+			<if test='USEFLAG !=null  and  USEFLAG !=""' >
+				AND  A.USEFLAG = #{USEFLAG} 		--사용유무
+			</if>
+			<choose>
+				<when test='orderby == "SORTKEY"'> ORDER BY A.SORTKEY </when>
+				<when test='orderby == "UPDATE"'> ORDER BY A.UPDDATE1 DESC, A.UPDDATE2 DESC </when>
+			</choose>
+    </select>
+	
+	<insert id="menu_02Insert"  parameterType="hashmap"  >
+   		<if test="staffList.size != 0">
+	   			INSERT INTO TB_MENU
+				(
+					MENUID, 		
+					SORTKEY,        
+					MENUSTEP,       
+					KORMENUNAME,    
+					ENGMENUNAME,    
+					CHIMENUNAME,    
+					ETC,            
+					BEFMENUID,      
+					USEFLAG,        
+					UPDUSER,        
+					UPDDATE1, 
+					UPDDATE2 
+				)
+				VALUES
+			<foreach collection="staffList" item="item" separator="," >   
+				(
+					'${item.MENUID}', 		--메뉴ID 		
+					'${item.SORTKEY}',      --정렬순서 
+					'${item.MENUSTEP}',     --수준코드
+					N'${item.KORMENUNAME}',  --한국어메뉴명 
+					'${item.ENGMENUNAME}',  --영어메뉴명 
+					N'${item.CHIMENUNAME}',  --중국어메뉴명
+					N'${item.ETC}',          --기타 
+					'${item.BEFMENUID}',    --상위메뉴ID
+					'${item.USEFLAG}',      --사용유무 
+					'${item.UPDUSER}',      --수정자 
+					(CONVERT([varchar](8),getdate(),(112))), 
+					(replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+				)
+	   		</foreach>    
+   		</if>
+     </insert>
+	 
+	 <update id="menu_02Update"  parameterType="hashmap"   >
+		<if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+				UPDATE  TB_MENU 
+				SET     SORTKEY = 	  '${item.SORTKEY}',	 --정렬순서
+						MENUSTEP = 	  '${item.MENUSTEP}',	 --수준코드
+						KORMENUNAME = N'${item.KORMENUNAME}', --한국어메뉴명
+						ENGMENUNAME = '${item.ENGMENUNAME}', --영어메뉴명
+						CHIMENUNAME = N'${item.CHIMENUNAME}', --중국어메뉴명
+						ETC = 		  N'${item.ETC}',		 --기타
+						BEFMENUID =   '${item.BEFMENUID}',	 --상위메뉴ID
+						USEFLAG = 	  '${item.USEFLAG}',	 --사용유무
+						UPDUSER = 	  '${item.UPDUSER}',	 --수정자
+						UPDDATE1 = (CONVERT([varchar](8),getdate(),(112))),
+						UPDDATE2 = (replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+				WHERE   MENUID = '${item.MENUID}'		--메뉴ID
+			</foreach>    
+		</if>
+     </update>
+	 
+	 <select id="menu_02Select_SearchMENUNAME" parameterType="hashmap" resultType="hashmap" >
+		SELECT       
+		<choose>
+			<when test='language == "KOREAN"'>   '[' + A.MENUID + '] ' + A.KORMENUNAME AS MENUNAME, MENUID  </when>
+			<when test='language == "ENGLISH"'>  '[' + A.MENUID + '] ' + ISNULL(A.ENGMENUNAME, A.KORMENUNAME) AS MENUNAME, MENUID  </when>
+			<when test='language == "CHINESE"'>  '[' + A.MENUID + '] ' + ISNULL(A.CHIMENUNAME, A.KORMENUNAME) AS MENUNAME, MENUID  </when>
+		</choose>
+		FROM        TB_MENU A with (nolock)
+		WHERE        A.BEFMENUID = '$'
+				AND  A.USEFLAG = 'Y'
+		ORDER        BY A.SORTKEY
+     </select>
+	 
+	 <select id="menu_02Select_GridMENUNAME" parameterType="hashmap" resultType="hashmap" >
+		SELECT 
+		<choose>
+			<when test='language == "KOREAN"'>   '[' + MENUID + '] ' + KORMENUNAME AS MENUNAME, MENUID  </when>
+			<when test='language == "ENGLISH"'>  '[' + MENUID + '] ' + ISNULL(ENGMENUNAME, KORMENUNAME) AS MENUNAME, MENUID  </when>
+			<when test='language == "CHINESE"'>  '[' + MENUID + '] ' + ISNULL(CHIMENUNAME, KORMENUNAME) AS MENUNAME, MENUID  </when>
+		</choose>
+		FROM TB_MENU with (nolock) 
+		WHERE 	BEFMENUID = '$'
+			AND USEFLAG = 'Y'
+			union 
+			select	'$','$' 
+		ORDER BY MENUID 
+    </select>
+    
+    <select id="menu_02Select_LEVEL" parameterType="hashmap" resultType="hashmap" >
+		SELECT 'TOP' AS 'LEVEL'
+			UNION
+		SELECT 'BOTTOM' 
+    </select>
+	 
+	<select id="menu_02InsertUpdateCheck_MENUID" parameterType="hashmap" resultType="Integer" >
+		select count(*) as CNT 
+	 	from TB_MENU 	
+		where MENUID = #{MENUID}
+    </select>
+	 
+	<delete id="menu_02Delete" parameterType="hashmap">
+	     <if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+			    DELETE FROM TB_MENU
+				WHERE  MENUID = '${item.MENUID}' --메뉴ID
+			</foreach>    
+		</if>
+	</delete>  
+     
+</mapper>

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="login">
+	<select id="login_check" parameterType="hashmap" resultType="hashmap" >
+        <![CDATA[
+        	EXEC [dbo].[UP_LOGIN]
+        	'100' , 
+        	#{UID}, 
+        	#{PWD}
+        ]]>
+     </select>
+     
+     <select id="login_info" parameterType="hashmap" resultType="hashmap" >
+        select USERNAME, DEPTNM from TB_USER where USERID = #{UID}
+     </select>
+     
+     
+     <select id="loginSelect_MENU" parameterType="hashmap" resultType="hashmap" >
+       SELECT  
+        	
+		<if test='MENUID !=null  and  MENUID !=""'>
+			CASE A.MENUID  WHEN #{MENUID} THEN 'active open' ELSE '' END  active,
+		</if>
+			
+		--	NULL SEQ,
+			COUNT(*) OVER() AS TOTAL_COUNT,
+		--	A.SORTKEY, 		--정렬순서
+			A.MENUID,			--메뉴ID
+		--	A.MENUSTEP,		--수준코드
+			A.KORMENUNAME,	--한국어메뉴명
+			ISNULL(A.ENGMENUNAME,'') AS ENGMENUNAME,--영어메뉴명
+			ISNULL(A.CHIMENUNAME,'') AS CHIMENUNAME,--중국어메뉴명
+			ISNULL(A.BEFMENUID, '$') AS BEFMENUID	--상위메뉴ID
+		--	ISNULL(A.ETC,'') AS ETC,	--기타
+		--	A.USEFLAG,	--사용유무 
+		--	ISNULL(DBO.FN_USERNAME(A.UPDUSER),'') AS UPDUSER,	--수정자 
+		--	DBO.FN_STRDATE(A.UPDDATE1) AS UPDDATE1
+		FROM  TB_MENU A with (nolock)
+		WHERE  1 = 1
+			AND  A.MENUID IN ('M000','M001','M100','M850','M103' )
+			AND  A.USEFLAG = 'Y' 		--사용유무
+		ORDER BY A.SORTKEY
+     </select>
+     
+     <select id="loginSelect_PROG" parameterType="hashmap" resultType="hashmap" >
+
+        	SELECT   --'' AS SEL, 
+					<if test='PROGID !=null  and  PROGID !=""'>
+						CASE A.PROGID  WHEN #{PROGID} THEN 'active' ELSE '' END  active,
+					</if>
+				
+					COUNT(*) OVER() AS TOTAL_COUNT,
+					--   '[' + A.MENUID + '] ' + 
+					--   CASE '프로그램설정언어' WHEN 'KOREAN'  THEN B.KORMENUNAME 
+					--                           WHEN 'ENGLISH' THEN ISNULL(B.ENGMENUNAME, B.KORMENUNAME) 
+					--                           WHEN 'CHINESE' THEN ISNULL(B.CHIMENUNAME, B.KORMENUNAME)  END MENUNAME, 
+					B.KORMENUNAME as MENUNAME,  
+					A.MENUID,
+					--ISNULL(A.SORTKEY, '') AS SORTKEY, --정렬순서
+					A.PROGID,  --프로그램ID
+					ISNULL(A.KORPROGNAME, '') AS KORPROGNAME, --한국어프로그램명
+					ISNULL(A.ENGPROGNAME, '') AS ENGPROGNAME, --영어프로그램명
+					ISNULL(A.CHIPROGNAME, '') AS CHIPROGNAME,  --중국어프로그램명
+		 			<![CDATA[ ISNULL(C.WEBURL, '') +'?'+'menu='+A.MENUID+'&prog='+A.PROGID  AS WEBURL ]]>
+					--ISNULL(A.ETC, '') AS ETC,	--기타
+					--ISNULL(A.PROGTYPE, '') AS PROGTYPE, --프로그램구분
+					--A.FINDFLAG, 				--조회
+					--ISNULL(A.NEWFLAG, '') AS NEWFLAG, 	--신규
+					--ISNULL(A.SAVEFLAG, '') AS SAVEFLAG, --저장
+					--ISNULL(A.DELFLAG, '') AS DELFLAG,	--삭제
+					--ISNULL(A.EXPFLAG, '') AS EXPFLAG, 	--엑셀저장
+					--ISNULL(A.PRTFLAG, '') AS PRTFLAG, 	--프린트
+					--A.USEFLAG, 							--사용유무
+					--ISNULL(A.PROGRAMMER_NAME, '') AS PROGRAMMER_NAME, 	--프로그래머
+					--ISNULL(A.PROGCREATEDATE, '') AS PROGCREATEDATE, 	--프로그램개발일자
+					--ISNULL(A.PROGSTATUSID, '') AS PROGSTATUSID, 		--개발상태
+					--ISNULL(DBO.FN_USERNAME(A.UPDUSER), '')  AS UPDUSER, --수정자
+					--DBO.FN_StrDate(A.UPDDATE1) AS UPDDATE1				--수정일자
+			FROM        TB_PROG A with (nolock) JOIN TB_MENU B with (nolock) 
+								ON A.MENUID = B.MENUID 
+						LEFT OUTER JOIN TB_WEBURL C with (nolock) ON a.progid = C.progid 
+			WHERE   1 = 1
+					AND  A.USEFLAG = 'Y'
+					AND A.FINDFLAG = '-1'
+					 AND ((C.WEBURL <![CDATA[<>]]> NULL )  OR  (C.WEBURL  <![CDATA[<>]]>  '')) 
+					<choose>
+						<when test='MENUID !=null  and  MENUID !=""'>
+							AND A.MENUID = #{MENUID}
+							ORDER BY B.SORTKEY, A.SORTKEY
+						</when>
+						<otherwise>
+							AND A.MENUID = ''
+							AND A.PROGID = ''
+						</otherwise>
+					</choose>
+			
+     </select>
+     
+      <select id="loginSelect_ChoicePROG" parameterType="hashmap" resultType="hashmap" >
+
+        	SELECT   --'' AS SEL, 
+        	
+					<if test='PROGID !=null  and  PROGID !=""'>
+						CASE A.PROGID  WHEN #{PROGID} THEN 'active' ELSE '' END  active,
+					</if>
+					
+					COUNT(*) OVER() AS TOTAL_COUNT,
+					--   '[' + A.MENUID + '] ' + 
+					--   CASE '프로그램설정언어' WHEN 'KOREAN'  THEN B.KORMENUNAME 
+					--                           WHEN 'ENGLISH' THEN ISNULL(B.ENGMENUNAME, B.KORMENUNAME) 
+					--                           WHEN 'CHINESE' THEN ISNULL(B.CHIMENUNAME, B.KORMENUNAME)  END MENUNAME, 
+					B.KORMENUNAME as MENUNAME,  
+					A.MENUID,
+					--ISNULL(A.SORTKEY, '') AS SORTKEY, --정렬순서
+					A.PROGID,  --프로그램ID
+					ISNULL(A.KORPROGNAME, '') AS KORPROGNAME, --한국어프로그램명
+					ISNULL(A.ENGPROGNAME, '') AS ENGPROGNAME, --영어프로그램명
+					ISNULL(A.CHIPROGNAME, '') AS CHIPROGNAME,  --중국어프로그램명
+		 			<![CDATA[ ISNULL(C.WEBURL, '') +'?'+'menu='+A.MENUID+'&prog='+A.PROGID  AS WEBURL ]]>
+					--ISNULL(A.ETC, '') AS ETC,	--기타
+					--ISNULL(A.PROGTYPE, '') AS PROGTYPE, --프로그램구분
+					--A.FINDFLAG, 				--조회
+					--ISNULL(A.NEWFLAG, '') AS NEWFLAG, 	--신규
+					--ISNULL(A.SAVEFLAG, '') AS SAVEFLAG, --저장
+					--ISNULL(A.DELFLAG, '') AS DELFLAG,	--삭제
+					--ISNULL(A.EXPFLAG, '') AS EXPFLAG, 	--엑셀저장
+					--ISNULL(A.PRTFLAG, '') AS PRTFLAG, 	--프린트
+					--A.USEFLAG, 							--사용유무
+					--ISNULL(A.PROGRAMMER_NAME, '') AS PROGRAMMER_NAME, 	--프로그래머
+					--ISNULL(A.PROGCREATEDATE, '') AS PROGCREATEDATE, 	--프로그램개발일자
+					--ISNULL(A.PROGSTATUSID, '') AS PROGSTATUSID, 		--개발상태
+					--ISNULL(DBO.FN_USERNAME(A.UPDUSER), '')  AS UPDUSER, --수정자
+					--DBO.FN_StrDate(A.UPDDATE1) AS UPDDATE1				--수정일자
+			FROM        TB_PROG A with (nolock) JOIN TB_MENU B with (nolock) 
+								ON A.MENUID = B.MENUID 
+						LEFT OUTER JOIN TB_WEBURL C with (nolock) ON a.progid = C.progid 
+			WHERE   1 = 1
+					AND  A.USEFLAG = 'Y'
+					AND A.FINDFLAG = '-1'
+					AND ((C.WEBURL  <![CDATA[<>]]> NULL )  OR  (C.WEBURL   <![CDATA[<>]]>  ''))
+					<choose>
+						<when test='PROGID !=null  and  PROGID !=""'>
+							AND A.PROGID = #{PROGID}
+						</when>
+						<otherwise>
+							AND A.MENUID = ''
+							AND A.PROGID = ''
+							--UNION
+							--SELECT '','','','' ,'','','','/WMS/tabEmpty.do' as WEBURL
+						</otherwise>
+					</choose>
+			
+     </select>
+     
+     <select id="loginSelect_TabPROG" parameterType="hashmap" resultType="hashmap" >
+
+        	SELECT   --'' AS SEL, 
+        
+					COUNT(*) OVER() AS TOTAL_COUNT,
+					--   '[' + A.MENUID + '] ' + 
+					--   CASE '프로그램설정언어' WHEN 'KOREAN'  THEN B.KORMENUNAME 
+					--                           WHEN 'ENGLISH' THEN ISNULL(B.ENGMENUNAME, B.KORMENUNAME) 
+					--                           WHEN 'CHINESE' THEN ISNULL(B.CHIMENUNAME, B.KORMENUNAME)  END MENUNAME, 
+					B.KORMENUNAME as MENUNAME,  
+					A.MENUID,
+					--ISNULL(A.SORTKEY, '') AS SORTKEY, --정렬순서
+					A.PROGID,  --프로그램ID
+					ISNULL(A.KORPROGNAME, '') AS KORPROGNAME, --한국어프로그램명
+					ISNULL(A.ENGPROGNAME, '') AS ENGPROGNAME, --영어프로그램명
+					ISNULL(A.CHIPROGNAME, '') AS CHIPROGNAME,  --중국어프로그램명
+		 			<![CDATA[ ISNULL(C.WEBURL, '') +'?'+'menu='+A.MENUID+'&prog='+A.PROGID  AS WEBURL ]]>
+					--ISNULL(A.ETC, '') AS ETC,	--기타
+					--ISNULL(A.PROGTYPE, '') AS PROGTYPE, --프로그램구분
+					--A.FINDFLAG, 				--조회
+					--ISNULL(A.NEWFLAG, '') AS NEWFLAG, 	--신규
+					--ISNULL(A.SAVEFLAG, '') AS SAVEFLAG, --저장
+					--ISNULL(A.DELFLAG, '') AS DELFLAG,	--삭제
+					--ISNULL(A.EXPFLAG, '') AS EXPFLAG, 	--엑셀저장
+					--ISNULL(A.PRTFLAG, '') AS PRTFLAG, 	--프린트
+					--A.USEFLAG, 							--사용유무
+					--ISNULL(A.PROGRAMMER_NAME, '') AS PROGRAMMER_NAME, 	--프로그래머
+					--ISNULL(A.PROGCREATEDATE, '') AS PROGCREATEDATE, 	--프로그램개발일자
+					--ISNULL(A.PROGSTATUSID, '') AS PROGSTATUSID, 		--개발상태
+					--ISNULL(DBO.FN_USERNAME(A.UPDUSER), '')  AS UPDUSER, --수정자
+					--DBO.FN_StrDate(A.UPDDATE1) AS UPDDATE1				--수정일자
+			FROM        TB_PROG A with (nolock) JOIN TB_MENU B with (nolock) 
+								ON A.MENUID = B.MENUID 
+						LEFT OUTER JOIN TB_WEBURL C with (nolock) ON a.progid = C.progid 
+			WHERE   1 = 1
+					AND  A.USEFLAG = 'Y'
+					AND A.FINDFLAG = '-1'
+					<choose>
+						<when test='TapList !=null  and  TapList !=""'>
+							AND A.PROGID IN(${TapList})
+						</when>
+						<otherwise>
+							AND A.PROGID IN('')
+						</otherwise>
+					</choose>
+			ORDER BY charindex(A.PROGID, '${orderByTapList}') 
+     </select>
+</mapper>

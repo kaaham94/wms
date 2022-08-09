@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="screen_01">
+
+	<select id="screen_01Select" parameterType="hashmap" resultType="hashmap" >
+		SELECT '' AS SEL, 
+				COUNT(*) OVER() AS TOTAL_COUNT,
+			 --   '[' + A.MENUID + '] ' + 
+			 --   CASE '프로그램설정언어' WHEN 'KOREAN'  THEN B.KORMENUNAME 
+			 --                           WHEN 'ENGLISH' THEN ISNULL(B.ENGMENUNAME, B.KORMENUNAME) 
+			 --                           WHEN 'CHINESE' THEN ISNULL(B.CHIMENUNAME, B.KORMENUNAME)  END MENUNAME, 
+				<choose>
+					<when test='language == "KOREAN"'>   '[' + A.MENUID + '] '+B.KORMENUNAME as MENUNAME, </when>
+					<when test='language == "ENGLISH"'>  '[' + A.MENUID + '] '+ISNULL(B.ENGMENUNAME, B.KORMENUNAME) as MENUNAME, </when>
+					<when test='language == "CHINESE"'>  '[' + A.MENUID + '] '+ISNULL(B.CHIMENUNAME, B.KORMENUNAME) as MENUNAME, </when>
+				</choose>
+				A.MENUID,
+				ISNULL(A.SORTKEY, '') AS SORTKEY, --정렬순서
+				A.PROGID,  --프로그램ID
+				ISNULL(A.KORPROGNAME, '') AS KORPROGNAME, --한국어프로그램명
+				ISNULL(A.ENGPROGNAME, '') AS ENGPROGNAME, --영어프로그램명
+				ISNULL(A.CHIPROGNAME, '') AS CHIPROGNAME, --중국어프로그램명
+				ISNULL(A.ETC, '') AS ETC,	--기타
+				ISNULL(A.PROGTYPE, '') AS PROGTYPE, --프로그램구분
+				A.FINDFLAG, 				--조회
+				ISNULL(A.NEWFLAG, '') AS NEWFLAG, 	--신규
+				ISNULL(A.SAVEFLAG, '') AS SAVEFLAG, --저장
+				ISNULL(A.DELFLAG, '') AS DELFLAG,	--삭제
+				ISNULL(A.EXPFLAG, '') AS EXPFLAG, 	--엑셀저장
+				ISNULL(A.PRTFLAG, '') AS PRTFLAG, 	--프린트
+				A.USEFLAG, 							--사용유무
+				ISNULL(A.PROGRAMMER_NAME, '') AS PROGRAMMER_NAME, 	--프로그래머
+				ISNULL(A.PROGCREATEDATE, '') AS PROGCREATEDATE, 	--프로그램개발일자
+				ISNULL(A.PROGSTATUSID, '') AS PROGSTATUSID, 		--개발상태
+				ISNULL(DBO.FN_USERNAME(A.UPDUSER), '')  AS UPDUSER, --수정자
+				DBO.FN_StrDate(A.UPDDATE1) AS UPDDATE1				--수정일자
+		FROM        TB_PROG A with (nolock) JOIN TB_MENU B with (nolock) 
+							ON A.MENUID = B.MENUID 
+		WHERE   1 = 1
+			<if test='USEFLAG !=null  and  USEFLAG !=""' >
+				AND  A.USEFLAG = #{USEFLAG}
+			</if>
+			<if test='PROGID !=null  and  PROGID !=""' >
+				AND  A.PROGID LIKE '${PROGID}%'
+			</if>	
+			<if test='PROGNAME !=null  and  PROGNAME !=""' >
+				AND	(A.KORPROGNAME LIKE N'%${PROGNAME}%' OR A.ENGPROGNAME LIKE N'%${PROGNAME}%')
+			</if>
+			<if test='MENUID !=null  and  MENUID !=""' >	
+				AND  B.MENUID = #{MENUID}
+			</if>	
+			<choose>
+				<when test='orderby == "SORTKEY"'> ORDER BY B.SORTKEY, A.SORTKEY </when>
+				<when test='orderby == "UPDATE"'> ORDER BY A.upddate1 DESC, A.upddate2 DESC </when>
+			</choose>
+    </select>
+    
+    <select id="screen_01Select_MENUNAME" parameterType="hashmap" resultType="hashmap" >
+		SELECT '[' + MENUID + '] ' + KORMENUNAME AS MENUNAME,
+		 		MENUID
+		FROM TB_MENU B with (nolock) 
+		WHERE   1 = 1
+			AND	USEFLAG = 'Y' 
+		ORDER BY MENUID 
+    </select>
+    
+    <select id="screen_01Select_FORM" parameterType="hashmap" resultType="hashmap" >
+	       	SELECT 'UI' as 'FORM' 
+					union
+			SELECT 'PDA' 
+			UNION
+		   	SELECT ''
+    </select>
+	
+	 <select id="code_01InsertUpdateCheck_PROGID" parameterType="hashmap" resultType="Integer" >
+	 	select count(*) as CNT 
+	 	from TB_PROG 	
+		where PROGID = #{PROGID}
+     </select>
+	
+	<insert id="screen_01Insert"  parameterType="hashmap"  >
+   		<if test="staffList.size != 0">
+	   			INSERT INTO TB_PROG 
+				(
+					PROGID, 
+					KORPROGNAME, 
+					ENGPROGNAME, 
+					CHIPROGNAME,
+					ETC, 
+					PROGTYPE, 
+					MENUID,
+					FINDFLAG, 
+					NEWFLAG, 
+					SAVEFLAG, 
+					DELFLAG, 
+					EXPFLAG, 
+					PRTFLAG,
+					PROGRAMMER_NAME, 
+					PROGCREATEDATE, 
+					PROGSTATUSID, 
+					SORTKEY, 
+					USEFLAG, 
+					UPDUSER, 
+					UPDDATE1, 
+					UPDDATE2
+				)
+				VALUES
+			<foreach collection="staffList" item="item" separator="," >   
+				(
+					'${item.PROGID}', 			--프로그램ID 
+					N'${item.KORPROGNAME}', 	--한국어프로그램명  
+					'${item.ENGPROGNAME}', 		--영어프로그램명 
+					'${item.CHIPROGNAME}',		--중국어프로그램명
+					N'${item.ETC}', 			--기타 
+					'${item.PROGTYPE}', 		--프로그램구분 
+					'${item.MENUID}',			--메뉴ID
+					'${item.FINDFLAG}', 		--조회 
+					'${item.NEWFLAG}', 			--신규 
+					'${item.SAVEFLAG}', 		--저장 
+					'${item.DELFLAG}', 			--삭제 
+					'${item.EXPFLAG}', 			--엑셀저장 
+					'${item.PRTFLAG}',			--프린트
+					N'${item.PROGRAMMER_NAME}', --프로그래머 
+					'${item.PROGCREATEDATE}', 	--프로그램개발일자  
+					N'${item.PROGSTATUSID}', 	--개발상태
+					'${item.SORTKEY}', 			--정렬순서 
+					'${item.USEFLAG}', 			--사용유무 
+					'${item.UPDUSER}', 			--수정자
+					(CONVERT([varchar](8),getdate(),(112))), 
+					(replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+				)
+	   		</foreach>    
+   		</if>
+     </insert>
+	 
+	 <update id="screen_01Update"  parameterType="hashmap"   >
+		<if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+				UPDATE  TB_PROG 
+				SET	KORPROGNAME =  		N'${item.KORPROGNAME}',     --한국어프로그램명
+					ENGPROGNAME = 		'${item.ENGPROGNAME}', 	   --영어프로그램명
+					CHIPROGNAME = 		'${item.CHIPROGNAME}', 	   --중국어프로그램명
+					ETC = 				N'${item.ETC}', 			   --기타
+					PROGTYPE  =			'${item.PROGTYPE}',		   --프로그램구분
+					MENUID = 			'${item.MENUID}', 		   --메뉴ID
+					FINDFLAG = 			'${item.FINDFLAG}', 	   --조회
+					NEWFLAG = 			'${item.NEWFLAG}', 		   --신규
+					SAVEFLAG = 			'${item.SAVEFLAG}', 	   --저장
+					DELFLAG = 			'${item.DELFLAG}', 		   --삭제
+					EXPFLAG = 			'${item.EXPFLAG}', 		   --엑셀저장
+					PRTFLAG = 			'${item.PRTFLAG}', 		   --프린트
+					SORTKEY = 			'${item.SORTKEY}', 		   --정렬순서
+					PROGRAMMER_NAME = 	N'${item.PROGRAMMER_NAME}', --프로그래머
+					PROGCREATEDATE = 	'${item.PROGCREATEDATE}',  --프로그램개발일자
+					PROGSTATUSID = 		N'${item.PROGSTATUSID}',    --개발상태
+					USEFLAG = 			'${item.USEFLAG}', 		   --사용유무
+					UPDUSER = 			'${item.UPDUSER}', 		   --수정자
+					UPDDATE1 = (CONVERT([varchar](8),getdate(),(112))),
+					UPDDATE2 = (replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+				WHERE PROGID = '${item.PROGID}' --프로그램ID	 
+			</foreach>    
+		</if>
+     </update>
+	 
+	 <delete id="screen_01Delete" parameterType="hashmap">
+	     <if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+			    DELETE  FROM TB_PROG
+				WHERE	PROGID = '${item.PROGID}' --프로그램ID
+			</foreach>    
+		</if>
+	</delete>
+     
+</mapper>

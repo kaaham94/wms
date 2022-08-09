@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="code_01">
+
+	<select id="code_01Select" parameterType="hashmap" resultType="hashmap" >
+	   select '' as sel,
+	   			  COUNT(*) OVER() AS TOTAL_COUNT, 
+	              <choose>
+	               	<when test='filter == "codeType"'> 
+	              		CODEGRP,
+	               	</when>
+	               	<when test='filter == "code"'> 
+	               		CODEGRP AS hidden_CODEGRP,
+	               		'[' + CODEGRP + '] ' + 
+	               		ISNULL((SELECT CODENAME FROM tb_code with (nolock) WHERE codegrp = a.codegrp and code = '$'), '') AS CODEGRP,
+	               		CODE,
+	              	</when>
+	              </choose>
+	              CODENAME,
+	              CODENAME_EN,
+	              IsNULL( ETC, '' ) ETC,
+	              USEFLAG,
+	              UPDUSER,
+	              dbo.FN_StrDate(UPDDATE1) as DATE
+		from      tb_code a with (nolock)
+		where     1 = 1   
+		 
+		<if test='CODE != null'>and code like '%${CODE}%'</if>
+		<if test='CODEGRP != null and CODEGRP != ""' >and CODEGRP = #{CODEGRP}</if>
+		<if test='USEFLAG != null'>and USEFLAG = #{USEFLAG}</if>
+		
+		<choose>
+			<when test='filter == "codeType"'>  and  code = '$' 			--코드종류 True </when>
+			<when test='filter == "code"'> and code <![CDATA[<>]]> '$' 	--코드종류 False</when>
+		</choose>
+		
+		<if test='CODENAME != null'>and CODENAME like N'%${CODENAME}%'</if>
+		
+		<choose>
+			<when test='orderby == "CODEGRP"'> order by CODEGRP ASC, CODENAME ASC </when>
+			<when test='orderby == "DATE"'>  order by DATE DESC, UPDDATE2 DESC </when>
+		</choose>		
+     </select>
+     
+     <select id="code_01Search_CODEGRP" parameterType="hashmap" resultType="hashmap" >
+	 	SELECT  CODEGRP , '[' + CODEGRP+ '] '+ ISNULL(CODENAME, '') AS CODETYPE  
+	 	FROM tb_code with (nolock) 
+	 	WHERE  code = '$' and USEFLAG = 'Y'
+	 	UNION
+		SELECT '',''
+		order by CODEGRP
+     </select>
+  
+     
+ 	 <select id="code_01InsertCheck_CODEGRP_CODE" parameterType="hashmap" resultType="Integer" >
+	 	select count(*) as CNT from TB_CODE 	
+		where  	CODEGRP = #{CODEGRP}
+		and		CODE = #{CODE}
+     </select>
+
+     <insert id="A901_SAVE"  parameterType="hashmap"   >
+   			<if test="staffList.size != 0">
+	   			INSERT INTO TB_CODE (
+					 	CODEGRP, 
+						CODE, 
+						CODENAME, 
+						CODENAME_EN, 
+						ETC, 
+						USEFLAG, 
+						UPDUSER, 
+						UPDDATE1, 
+						UPDDATE2
+					) values 
+					
+				<foreach collection="staffList" item="item" separator="," >   
+					(
+						'${item.CODEGRP}',	--코드종류
+						'${item.CODE}',	  	--코드	
+						N'${item.CODENAME}',	
+						'${item.CODENAME_EN}',	
+						N'${item.ETC}',
+						'${item.USEFLAG}',
+						'${item.UPDUSER}',
+						(CONVERT([varchar](8),getdate(),(112))),
+						(replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+					)
+				</foreach>    
+			</if>
+
+     </insert>
+     
+     <update id="A901_UPDATE"  parameterType="hashmap"   >
+   			<if test="staffList.size != 0">		
+				<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+					update	TB_CODE
+					set     CODENAME = N'${item.CODENAME}',
+			                ETC = N'${item.ETC}',
+			                USEFLAG = '${item.USEFLAG}',
+			                UPDUSER = '${item.UPDUSER}',
+			                UPDDATE1 = (CONVERT([varchar](8),getdate(),(112))),
+			                UPDDATE2 = (replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+					where   CODEGRP = '${item.CODEGRP}' 	
+					and		CODE = '${item.CODE}' 				
+				</foreach>    
+			</if>
+     </update>
+     
+     <delete id="code_01Delete" parameterType="hashmap">
+	     <if test="staffList.size != 0">		
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+			    delete	from TB_CODE
+				where   CODEGRP = '${item.CODEGRP}'
+				and     CODE = '${item.CODE}'
+			</foreach>    
+		</if>
+	</delete>  
+     
+</mapper>

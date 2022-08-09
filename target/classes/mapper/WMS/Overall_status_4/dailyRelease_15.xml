@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dailyRelease_15">
+	 
+	
+	<select id="dailyRelease_15Select"  parameterType="hashmap" resultType="hashmap"  >      	
+  			EXEC UP_CHART_01_R1
+				#{YYMM},	--VARCHAR(8),			--연월
+				#{MATNR},	--VARCHAR(50) = '',		--품목
+				#{STYPE},	--VARCHAR(10) = 'QTY',	--QTY(상품수량) / BOX(박스갯수)
+				#{USERID},	--VARCHAR(20),			--사용자
+				#{MANDT},	--VARCHAR(10),			--클라이언트
+				#{WERKS}	--VARCHAR(10)			--법인"
+     </select>
+     
+     <!-- 법인 -->
+	 <select id="dailyRelease_15Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + werks + '] ' + isnull(plantname,'')  AS PLANTNAME
+			, WERKS AS WERKS
+			  FROM tm_plant with (nolock) 
+			 WHERE MANDT = #{MANDT}
+			   AND USEFLAG <![CDATA[<>]]> 'N'
+			   UNION
+			  SELECT '',''
+			 ORDER BY werks
+	 </select>
+
+</mapper>

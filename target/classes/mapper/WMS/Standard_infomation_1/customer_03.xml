@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="customer_03">
+
+     <select id="customer_03Select2" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P1260_SELECT_R1] 
+			#{MANDT}, 	-- 클라이언트
+			#{CUSTCD}, 	-- 거래처코드
+			#{CUSTNM},	-- 거래처명
+			#{IFLAG}, 	-- 공급처
+			#{OFLAG}, 	-- 납품처
+			#{MFLAG}, 	-- 제조사
+			#{USEFLAG}	-- 사용유무
+     </select>
+   
+     <select id="customer_03Select" parameterType="hashmap" resultType="hashmap" >
+			SELECT NULL AS NEWFLAG 
+		       , NULL AS SEL 
+		       , COUNT(*) OVER() AS TOTAL_COUNT
+		       , A.CUSTCD 						--코드(키값)
+		       , ISNULL(A.CUSTNM, '') AS CUSTNM --거래처명
+		       , A.CUSTFULLNM  	--거래처FULL명칭
+		  	   , CASE WHEN A.IFLAG = 'Y' THEN -1 ELSE '' END AS IFLAG  --공급처
+		  	   , CASE WHEN A.OFLAG = 'Y' THEN -1 ELSE '' END AS OFLAG  --납품처
+		  	   , CASE WHEN A.MFLAG = 'Y' THEN -1 ELSE '' END AS MFLAG  --제조사
+		  	   , ISNULL(A.MATNRCODE, '') AS MATNRCODE  		--품번 채번코드
+		  	   , ISNULL(A.BARINDEXCODE, '') AS BARINDEXCODE	--바코드 채번코드
+		  	   , ISNULL(A.INITIAL, '') AS INITIAL		  	--거래처 이니셜
+		  	   , ISNULL(A.REGNO, '') AS REGNO	--사업자번호
+		       , ISNULL(A.SMAN, '') AS SMAN 	--담당자
+		       , ISNULL(A.EMAIL, '') AS EMAIL 	--이메일
+		       , ISNULL(A.TEL1, '') AS TEL1 	--전화1
+		       , ISNULL(A.TEL2, '') AS TEL2 	--전화2
+		       , ISNULL(A.FAX1, '') AS FAX1 	--팩스
+		       , ISNULL(A.ADDR, '') AS ADDR 	--주소
+		       , ISNULL(A.MEMO, '') AS MEMO 	--메모
+		  	   , A.USEFLAG  --사용여부
+		       , A.MKDATE  	--등록일
+		       , DBO.UF_NAME(A.MKUSER) AS MKUSER  --등록자
+		       , ISNULL(A.MODATE, '') AS MODATE	  --수정일
+		       , ISNULL(DBO.UF_NAME(A.MOUSER), '') AS MOUSER  --수정자
+		    FROM TM_CUST A WITH (NOLOCK)  
+		   WHERE A.MANDT = #{MANDT}
+		
+		<if test='CUSTCD !=null  and  CUSTCD !="" ' >
+			AND A.CUSTCD LIKE '%${CUSTCD}%' 	-- 거래처코드
+		</if>
+		<if test='CUSTNM !=null  and  CUSTNM !="" ' >
+			AND A.CUSTNM LIKE N'%${CUSTNM}%'    -- 거래처명
+		</if>
+		<if test='IFLAG !=null  and  IFLAG !="" ' >
+			AND A.IFLAG = #{IFLAG}  			-- 공급처
+		</if>
+		<if test='OFLAG !=null  and  OFLAG !="" ' >
+			AND A.OFLAG = #{OFLAG}     			-- 납품처
+		</if>
+		<if test='MFLAG !=null  and  MFLAG !="" ' >
+			AND A.MFLAG = #{MFLAG} 				-- 제조사
+		</if>
+		<if test='USEFLAG !=null  and  USEFLAG !="" ' >
+			AND A.USEFLAG = #{USEFLAG} 			-- 사용유무
+		</if>
+		<choose>
+			<when test='orderby == "CUSTCD"'>  ORDER BY A.CUSTCD ASC	-- 거래처코드 </when>
+			<when test='orderby == "MKDATE"'>  ORDER BY A.MKDATE DESC	 -- 등록일  </when>
+			<when test='orderby == "MODATE"'>  ORDER BY A.MODATE DESC	 -- 수정일  </when>
+		</choose>		
+     </select>
+
+  	 <select id="customer_03InsertUpdate"  parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P1260_SAVE_R1] 
+			#{MANDT}, 			-- 클라이언트
+			#{CUSTCD}, 			-- 거래처 코드
+			#{CUSTNM},			-- 거래처명
+			#{CUSTFULLNM}, 		-- 거래처 FULL명칭
+			#{IFLAG}, 			-- 공급처
+			#{OFLAG}, 			-- 납품처
+			#{MFLAG},			-- 제조사
+	   		#{MATNRCODE},		-- 품번 채번코드
+	   		#{BARINDEXCODE},	-- 바코드 채번코드
+		  	#{INITIAL},     	-- 거래처 이니셜
+	      	#{REGNO},       	-- 사업자 번호
+	      	#{SMAN},        	-- 담당자                  
+	      	#{EMAIL},			-- 이메일                      
+	      	#{TEL1},        	-- 전화1               
+	      	#{TEL2},      	 	-- 전화2              
+	      	#{FAX1},      	 	-- 팩스             
+	      	#{ADDR},        	-- 주소             
+	      	#{MEMO},        	-- 메모              
+	      	#{USEFLAG},     	-- 사용유무        
+	      	#{USERID},      	-- 사용자         
+	      	#{NEWFLAG}     		-- 신규여부  
+     </select>
+  
+     
+</mapper>

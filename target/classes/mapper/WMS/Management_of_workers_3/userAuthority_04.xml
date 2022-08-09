@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="userAuthority_04">
+
+	<select id="userAuthority_04Select_right" parameterType="hashmap" resultType="hashmap" >
+			SELECT a.menuid, 		--메뉴ID
+				COUNT(*) OVER() AS TOTAL_COUNT, 
+				'' AS rowspan,
+				<choose>
+					<when test='language == "KOREAN"'> 
+						B.KORMENUNAME AS MENUNAME,	--메뉴명
+						A.KORPROGNAME AS PROGNAME,	--화면명
+					</when>		
+					<when test='language == "ENGLISH"'> 
+						B.ENGMENUNAME AS MENUNAME,
+						A.ENGPROGNAME AS PROGNAME,
+					</when>
+					<when test='language == "CHINESE"'> 
+						B.CHIMENUNAME AS MENUNAME,
+						A.CHIPROGNAME AS PROGNAME,
+					</when>
+				</choose>
+			   a.PROGID, 	--화면ID
+			   CASE WHEN ISNULL(a.FINDFLAG,'0') NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.findgrant,'0') END AS FINDGRANT, --조회 
+			   CASE WHEN ISNULL(a.NEWFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.NEWGRANT,'0')  END AS NEWGRANT,  --신규 
+			   CASE WHEN ISNULL(a.SAVEFLAG,'0') NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.SAVEGRANT,'0') END AS SAVEGRANT, --저장 
+			   CASE WHEN ISNULL(a.DELFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.DELGRANT,'0')  END AS DELGRANT,  --삭제 
+			   CASE WHEN ISNULL(a.EXPFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.EXPGRANT,'0')  END AS EXPGRANT,  --엑셀 
+			   CASE WHEN ISNULL(a.PRTFLAG,'0')  NOT IN ('-1', '1') THEN '4' ELSE ISNULL(c.PRTGRANT,'0')  END AS PRTGRANT,  --출력 
+			   c.UPDUSER,   --수정자
+			   DBO.FN_StrDate(c.UPDDATE1) AS UPDDATE1 --수정일
+		  FROM tb_prog a with (nolock) JOIN tb_menu b with (nolock) ON a.menuid = b.menuid 
+						 LEFT OUTER JOIN tb_userauth1 c with (nolock) ON a.progid = c.progid 
+							AND c.MANDT = #{MANDT}
+							AND c.userid = #{USERID}
+		 WHERE A.USEFLAG = 'Y' 
+		 ORDER BY b.sortkey, b.menuid, a.sortkey, a.progid
+    </select>
+	
+	
+	<select id="userAuthority_04Select_left" parameterType="hashmap" resultType="hashmap" >
+		SELECT '' AS sel, 
+			   USERID, 	--사용자ID
+			   USERNAME, --사용자명
+			   USERPWD, --패스워드
+			   ISNULL( '[' + plantcd + '] ' + 
+			   ISNULL((SELECT plantname FROM tm_plant WHERE MANDT = A.MANDT AND werks = a.plantcd), ''),'') AS PLANT, --법인
+			   ISNULL( '[' + wccode + '] ' + 
+			   (SELECT wcname FROM tm_workcenter WHERE MANDT = A.MANDT AND werks = a.plantcd AND arbpl = a.wccode), '') AS WC, --작업장
+				AUTH AS AUTH_CODE, 	--사용자그룹 코드
+			   ISNULL((SELECT '[' + CODE + '] ' + CODENAME FROM TB_CODE	
+			    WHERE CODEGRP = 'AUTH' AND CODE = A.AUTH),'') AUTH, --사용자그룹
+			   ISNULL(AUTH2,'') AS AUTH2, --권한
+			   USEFLAG,  --사용여부
+			   UPDUSER,  --수정자
+			   DBO.FN_StrDate(upddate1) AS UPDDATE1, --수정일
+			   ISNULL(STCAUTH,'') AS STCAUTH --STC
+		 FROM tb_user a with (nolock)
+		 WHERE A.MANDT = #{MANDT}
+		 
+		<if test='USERID !=null  and  USERID !=""' >
+			 AND userid LIKE '%${USERID}%'
+		</if>
+		<if test='USERNAME !=null  and  USERNAME !=""' >
+			 AND username LIKE N'%${USERNAME}%'
+		</if>
+		   AND MANDT = #{MANDT} 
+		   AND STAT2 NOT IN ('2', '0') 
+		   AND useflag = 'Y' 
+		 ORDER BY userid 
+	</select>
+	
+	<update id="userAuthority_04InsertUpdate"  parameterType="hashmap">
+		<if test="staffList.size != 0">		
+			<choose>
+				<when test='check == "Y"'> 
+					--재고실사 시작 및 재고반영 권한 체크시
+					UPDATE TB_USER SET STCAUTH = 'Y' WHERE MANDT = #{MANDT} AND USERID = #{USERID}
+				</when>		
+				<when test='check == "N"'> 
+					--미체크시
+					UPDATE TB_USER SET STCAUTH = '' WHERE MANDT = #{MANDT} AND USERID =  #{USERID}
+				</when>
+			</choose>
+			<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+
+				DELETE FROM TB_USERAUTH1 
+				 WHERE USERID = '${item.USERID}' 
+				   AND PROGID = '${item.PROGID}'    
+				   AND MANDT = '${item.MANDT}'	
+
+				INSERT INTO TB_USERAUTH1 
+				(
+					   MANDT   ,    -- 사용자ID 
+					   USERID   ,   -- 사용자ID 
+					   PROGID   ,   -- 프로그램ID 
+					   FINDGRANT,   -- 조회권한:I(등록),U(업데이트),D(삭제) 
+					   NEWGRANT ,   --신규
+					   SAVEGRANT,   --저장
+					   DELGRANT ,   --삭제
+					   EXPGRANT ,   --엑셀
+					   PRTGRANT ,   --출력
+					   UPDUSER  ,   --수정자 
+					   UPDDATE1 ,   --수정일시 
+					   UPDDATE2     --수정일시 
+				) 
+				VALUES (
+					'${item.MANDT}'     ,
+					'${item.USERID}'    ,
+					'${item.PROGID}'    ,
+					'${item.FINDGRANT}' ,
+					'${item.NEWGRANT}'  ,
+					'${item.SAVEGRANT}' ,
+					'${item.DELGRANT}'  ,
+					'${item.EXPGRANT}'  ,
+					'${item.PRTGRANT}'  ,
+					'${item.UPDUSER}'   ,
+					(CONVERT([varchar](8),getdate(),(112))),
+					(replace(CONVERT([varchar](8),getdate(),(108)),':','')) 
+				)
+			</foreach>    
+		</if>
+    </update>
+	 
+</mapper>

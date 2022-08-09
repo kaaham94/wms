@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="materialsDetail_03">
+
+	<!-- 리스트 -->
+	<select id="materialsDetail_03Select"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P9330_SELECT_R4_PAGING] -- 좌측
+			#{MANDT},	 --@MANDT		CHAR(3) = '100',
+			#{SDATE},	 --@SSDATE		VARCHAR(10) = '',	--입고시작일
+			#{EDATE},    --@SEDATE		VARCHAR(10) = '',	--입고종료일
+			#{WERKS},	 --@WERKS		VARCHAR(10) = '',	--법인
+			#{LGORT},	 --@LGORT		VARCHAR(20) = '',	--저장위치
+			#{MAKTX},	 --@MAKTX		NVARCHAR(500) = '',	--품번
+			#{BSART},	 --@BSART		VARCHAR(10) = '',	--입고유형
+			#{LIFNR},	 --@LIFNR		VARCHAR(10) = '',	--공급처
+			#{KUNNR},	 --@KUNNR		VARCHAR(10) = '',	--제조사
+			#{EBELN},	 --@EBELN		VARCHAR(20) = '',	--요청번호
+			#{BARNO},	 --@BARNO		VARCHAR(50) = '',	--바코드
+			#{USERID},   --@USERID		VARCHAR(20)
+			#{START},
+			#{END}
+     </select>
+	
+
+
+
+
+	<!-- 제조사 -->
+ 	<select id="materialsDetail_03Select_KUNNR" parameterType="hashmap" resultType="hashmap" >
+		SELECT '[' + DBO.FN_CONVCODE(CUSTCD,'') + '] ' + CUSTNM AS CUSTNM
+			,CUSTCD
+		  FROM TM_CUST WITH (NOLOCK) 
+		 WHERE MANDT = '100' 
+		   AND MFLAG = 'Y' 
+		   AND UseFlag = N'Y' 
+		   UNION
+		   SELECT '',''
+		 ORDER BY 1 
+	</select>
+	
+	<!-- 입고유형 -->
+ 	<select id="materialsDetail_03Select_BSART" parameterType="hashmap" resultType="hashmap" >
+ 		SELECT '[' + CODE + '] ' + ISNULL(CODENAME,'') AS CODENAME
+			, CODE AS CODE
+		  FROM TB_CODE WITH (NOLOCK) 
+		 WHERE CODE NOT IN ('$')
+		   AND CODEGRP = 'BSART'
+		   AND UseFlag = 'Y' 
+		 ORDER BY DISPSEQ, 1 
+	</select>
+	
+ 	<!-- 공급처 -->
+ 	<select id="materialsDetail_03Select_LIFNR" parameterType="hashmap" resultType="hashmap" >
+			 SELECT '[' + DBO.FN_CONVCODE(CUSTCD,'') + '] ' + CUSTNM  AS CUSTNM
+					,DBO.FN_CONVCODE(CUSTCD,'') AS CUSTCD
+			 FROM TM_CUST WITH (NOLOCK) 
+			 WHERE MANDT = '100' 
+			   AND UseFlag = N'Y'
+			 	UNION
+			 	SELECT '',''
+			 ORDER BY 1 
+	</select>
+	
+	<!-- 법인 -->
+	<select id="materialsDetail_03Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + werks + '] ' + isnull(plantname,'')  AS PLANTNAME
+			, WERKS AS WERKS
+			  FROM tm_plant with (nolock) 
+			 WHERE MANDT = #{MANDT}
+			   AND USEFLAG <![CDATA[<>]]> 'N'
+			   UNION
+			  SELECT '',''
+			 ORDER BY werks
+	</select>
+	
+	<!-- 저장위치 -->    
+	<select id="materialsDetail_03Select_LGORT" parameterType="hashmap" resultType="hashmap" >
+		<choose>
+			<when test='WERKS !=null  and  WERKS !=""'>
+				SELECT '[' + LGORT + '] ' + isnull(SLNAME,'')  AS SLNAME
+					,LGORT
+				FROM TM_STORELOC with (nolock) 
+				WHERE MANDT = #{MANDT}
+					AND	WERKS = #{WERKS}			--법인코드
+					AND USEFLAG = 'Y' 
+				UNION
+				SELECT '',''
+				ORDER BY LGORT   
+			</when>
+			<otherwise>
+				SELECT '' AS SLNAME, '' AS LGORT
+			</otherwise>
+		</choose>
+	</select>
+	 
+</mapper>

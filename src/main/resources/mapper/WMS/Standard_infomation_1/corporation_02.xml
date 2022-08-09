@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="corporation_02">
+
+     <select id="corporation_02Select" parameterType="hashmap" resultType="hashmap" >
+		  select			'' as sel,
+		 					 COUNT(*) OVER() AS TOTAL_COUNT, 
+			                '[' + A.BUKRS + ']' +
+			                ISNULL((SELECT comname FROM tm_company 
+			                                WHERE MANDT = A.MANDT
+			                                AND BUKRS = A.BUKRS), '') AS plant,
+			                A.BUKRS,
+			                A.WERKS,
+			                A.PLANTNAME,
+			                A.USEFLAG,
+			                A.UPDUSER,
+			                DBO.FN_StrDate(A.upddate1) AS DATE
+			from        TM_PLANT A with(nolock)
+			where        1 = 1
+			<if test='MANDT != null'>
+				and                A.MANDT = #{MANDT}  --'회사코드' 전역변수
+			</if>
+			<if test='WERKS != null'>
+				and                A.WERKS like '%${WERKS}%'  --법인코드
+			</if>
+			<if test='PLANTNAME != null'>
+				and                A.PLANTNAME like N'%${PLANTNAME}%'  --법인명
+			</if>
+			<if test='USEFLAG != null'>
+				and                A.USEFLAG = #{USEFLAG} -- 사용유무
+			</if>
+			
+			<choose>
+				<when test='orderby == "BUKRS"'> order by A.BUKRS, A.WERKS </when>
+				<when test='orderby == "DATE"'>  order by DATE DESC, UPDDATE2 DESC </when>
+			</choose>		
+			
+     </select>
+     
+     <select id="corporation_02Select_plant" parameterType="hashmap" resultType="hashmap" >
+     	SELECT  '[' + BUKRS + ']' + ISNULL(comname ,'') AS plant,
+     			BUKRS									
+		FROM tm_company (nolock) 
+		WHERE MANDT = #{MANDT}
+     	order by BUKRS
+     </select>
+  
+ 	 <select id="code_01InsertUpdateCheck_MANDT_WERKS" parameterType="hashmap" resultType="Integer" >
+	 	select count(*) as CNT from tm_plant 	
+		where  	MANDT = #{MANDT}
+		and		WERKS = #{WERKS}
+     </select>
+
+     <insert id="corporation_02Insert"  parameterType="hashmap"  >
+   		<if test="staffList.size != 0">
+	   			INSERT INTO tm_plant (
+						MANDT, 
+						WERKS, 
+						PLANTNAME,
+						BUKRS, 
+						USEFLAG, 
+						UPDUSER, 
+						UPDDATE1,
+						UPDDATE2 
+				) VALUES 
+			<foreach collection="staffList" item="item" separator="," >   
+				( 
+						'${item.MANDT}',		--클라이언트
+						'${item.WERKS}',		--법인코드	
+						N'${item.PLANTNAME}',	--법인명
+						'${item.BUKRS}',		--회사코드
+						'${item.USEFLAG}',		--사용유무
+						'${item.UPDUSER}',		--수정자
+						(CONVERT([varchar](8),getdate(),(112))),
+						(replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+				
+				)
+	   		</foreach>    
+   		</if>
+     </insert>
+     
+     <update id="corporation_02Update"  parameterType="hashmap"   >
+   			<if test="staffList.size != 0">		
+				<foreach collection="staffList" item="item" index="index"  separator=";"  >   
+					update      TM_PLANT
+					set			PLANTNAME = N'${item.PLANTNAME}',
+					            BUKRS = '${item.BUKRS}',
+					            USEFLAG = '${item.USEFLAG}',
+					            UPDUSER = '${item.UPDUSER}',
+					            UPDDATE1 = (CONVERT([varchar](8),getdate(),(112))),
+					            UPDDATE2 = (replace(CONVERT([varchar](8),getdate(),(108)),':',''))
+					where       MANDT = '${item.MANDT}'
+					and         WERKS = '${item.WERKS}'
+				</foreach>    
+			</if>
+     </update>
+  
+     
+</mapper>

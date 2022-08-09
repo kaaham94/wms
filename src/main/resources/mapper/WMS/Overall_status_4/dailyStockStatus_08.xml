@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dailyStockStatus_08">
+
+	<!-- 리스트 -->
+	<select id="dailyStockStatus_08Select"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P9412_SELECT_PAGING]
+				#{MANDT}, 	--@MANDT 	CHAR(3),
+			    #{WERKS}, 	--@WERKS 	VARCHAR(4),		--법인
+				#{LGORT},	--@LGORT	VARCHAR(10),	--저장위치
+			    #{MAKTX}, 	--@MAKTX 	NVARCHAR(100),	--품번
+			    #{STATUS}, 	--@STATUS	VARCHAR(10),	--상태
+			    #{LOC}, 	--@LOC 		VARCHAR(10),	--로케이션
+			    #{FDATE},	--@FDATE	VARCHAR(10),	--재고일자
+				#{TDATE},	--@TDATE 	VARCHAR(10),	--재고일자
+				#{USERID},	--@USERID	VARCHAR(20),	--사용자
+				#{START},	--VARCHAR(20) = '1',	--페이징 시작 
+				#{END}		--VARCHAR(20) = '50'	--페이징 끝 
+     </select>
+
+	<!-- 법인 -->
+	<select id="dailyStockStatus_08Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + werks + '] ' + isnull(plantname,'')  AS PLANTNAME
+			, WERKS AS WERKS
+			  FROM tm_plant with (nolock) 
+			 WHERE MANDT = #{MANDT}
+			   AND USEFLAG <![CDATA[<>]]> 'N'
+			   UNION
+			  SELECT '',''
+			 ORDER BY werks
+	</select>
+	
+	<!-- 저장위치 -->    
+	<select id="dailyStockStatus_08Select_LGORT" parameterType="hashmap" resultType="hashmap" >
+		<choose>
+			<when test='WERKS !=null  and  WERKS !=""'>
+				SELECT '[' + LGORT + '] ' + isnull(SLNAME,'')  AS SLNAME
+					,LGORT
+				FROM TM_STORELOC with (nolock) 
+				WHERE MANDT = #{MANDT}
+					AND	WERKS = #{WERKS}			--법인코드
+					AND USEFLAG = 'Y' 
+				UNION
+				SELECT '',''
+				ORDER BY LGORT   
+			</when>
+			<otherwise>
+				SELECT '' AS SLNAME, '' AS LGORT
+			</otherwise>
+		</choose>
+	</select>
+	 
+	<!-- 상태 -->
+ 	<select id="dailyStockStatus_08Select_STATUS" parameterType="hashmap" resultType="hashmap" >
+		SELECT '[' + CODE + '] ' + ISNULL(CODENAME,'')  AS STOCKNAME,
+			CODE AS STOCK
+	 	FROM TB_CODE WITH (NOLOCK) 
+	 	WHERE CODE NOT IN ('$')
+	   	AND CODEGRP = 'STOCK'
+	   	AND UseFlag = N'Y' 
+	   		UNION
+	   		SELECT '',''
+	 	ORDER BY 1
+	</select>
+	 
+	 
+	<resultMap id="dailyStockStatus_08_myId1" type="hashmap"></resultMap>
+	<resultMap id="dailyStockStatus_08_myId2" type="hashmap"></resultMap>
+	<resultMap id="dailyStockStatus_08_myId3" type="hashmap"></resultMap>
+		 
+	 <!-- 로케이션 -->
+ 	<select id="dailyStockStatus_08Select_LOC" parameterType="hashmap" resultMap="dailyStockStatus_08_myId1,dailyStockStatus_08_myId2,dailyStockStatus_08_myId3" >
+		EXEC UP_P_SEARCH_R1 N'100',N'LOC','ALL','ALL','ALL','','', '20160000'
+	</select>
+</mapper>

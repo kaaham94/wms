@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="inventoryPaymentDepartmentExternal_12">
+
+	<select id="inventoryPaymentDepartmentExternal_12Select_left"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P9482_SELECT]
+				#{MANDT},   --VARCHAR(3),	--클라이언트
+				#{FDATE},	--VARCHAR(8),	--시작일자
+				#{TDATE},	--VARCHAR(8),	--종료일자
+				#{WERKS},	--VARCHAR(10),	--법인
+				#{LGORT},	--VARCHAR(10),	--저장위치
+				#{CUST},	--VARCHAR(20),	--제조사
+				#{LIFNR},	--VARCHAR(20),	--거래처
+				#{MAKTX},	--NVARCHAR(100),--품번
+				#{USERID}	--VARCHAR(20),	--사용자
+     </select>
+     
+     <select id="inventoryPaymentDepartmentExternal_12Select_right_total"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P9482_SELECT_R1] 
+				#{MANDT},   --VARCHAR(3),    --클라이언트
+				#{FDATE},   --VARCHAR(8),    --시작일자
+				#{TDATE},   --VARCHAR(8),    --종료일자
+				#{WERKS},   --VARCHAR(10),   --법인
+				#{LGORT},   --VARCHAR(10),   --저장위치
+				#{CUST},    --VARCHAR(20),   --제조사
+				#{LIFNR},   --VARCHAR(20),   --거래처
+				#{MAKTX},   --NVARCHAR(100), --품번
+				#{USERID}   --VARCHAR(20)    --사용자
+     </select>
+     
+     <select id="inventoryPaymentDepartmentExternal_12InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+		EXEC [dbo].[UP_P9482_SELECT_SUB] 
+			#{MANDT},       --VARCHAR(3),	--클라이언트
+			#{FDATE},		--VARCHAR(8),	--시작일자
+			#{TDATE},		--VARCHAR(8),	--종료일자
+			#{WERKS},		--VARCHAR(10),	--법인
+			#{LGORT},		--VARCHAR(10),	--저장위치
+			#{MATNR}		--VARCHAR(50)	--자재코드
+     </select>
+
+	<!-- 법인 -->
+	<select id="inventoryPaymentDepartmentExternal_12Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+			SELECT '[' + werks + '] ' + isnull(plantname,'')  AS PLANTNAME
+			, WERKS AS WERKS
+			  FROM tm_plant with (nolock) 
+			 WHERE MANDT = #{MANDT}
+			   AND USEFLAG <![CDATA[<>]]> 'N'
+			   UNION
+			  SELECT '',''
+			 ORDER BY werks
+	</select>
+	
+	<!-- 저장위치 -->    
+	<select id="inventoryPaymentDepartmentExternal_12Select_LGORT" parameterType="hashmap" resultType="hashmap" >
+		<choose>
+			<when test='WERKS !=null  and  WERKS !=""'>
+				SELECT '[' + LGORT + '] ' + isnull(SLNAME,'')  AS SLNAME
+					,LGORT
+				FROM TM_STORELOC with (nolock) 
+				WHERE MANDT = #{MANDT}
+					AND	WERKS = #{WERKS}			--법인코드
+					AND USEFLAG = 'Y' 
+				UNION
+				SELECT '',''
+				ORDER BY LGORT   
+			</when>
+			<otherwise>
+				SELECT '' AS SLNAME, '' AS LGORT
+			</otherwise>
+		</choose>
+	</select>
+	 
+	<resultMap id="inventoryPaymentDepartmentExternal_1Value" type="hashmap"></resultMap>
+	<resultMap id="inventoryPaymentDepartmentExternal_2Value" type="hashmap"></resultMap>
+	
+	<!-- 거래처 -->
+ 	<select id="inventoryPaymentDepartmentExternal_12Select_CUST" parameterType="hashmap" resultMap="inventoryPaymentDepartmentExternal_1Value,inventoryPaymentDepartmentExternal_2Value" >
+		EXEC UP_P_SEARCH_R1 N'100',N'CUST',N'IO','ALL','ALL','','', #{USERID}
+	</select>
+	
+</mapper>

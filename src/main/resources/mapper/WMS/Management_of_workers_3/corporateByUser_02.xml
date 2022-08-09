@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="corporateByUser_02">
+
+     <select id="corporateByUser_02Select" parameterType="hashmap" resultType="hashmap" >
+			SELECT 0 AS SEL,
+				   COUNT(*) OVER() AS TOTAL_COUNT,
+				   A.USERID,	-- 사용자 ID
+				   ISNULL(B.USERNAME,'') AS USERNAME,
+				   '[' + A.WERKS + '] ' + DBO.FN_GetCodeName('WERKS', A.MANDT, A.WERKS) AS PLANTNAME,--법인 
+				   A.WERKS,	--법인코드
+				   'Y' AS USEFLAG,	--사용여부
+				   MKUSERID,	--수정자
+				   CONVERT(VARCHAR, MKSTAMP, 120) AS MKSTAMP	--수정일
+			FROM TB_USER_WERKS A
+				   LEFT OUTER JOIN TB_USER B
+					 ON A.MANDT = B.MANDT
+					AND A.USERID = B.USERID
+			WHERE A.MANDT = #{MANDT} 
+			
+			<if test='USERID !=null  and  USERID !=""' >
+				AND A.USERID LIKE N'%${USERID}%' 
+			</if>
+			<if test='USERNAME !=null  and  USERNAME !=""' >
+				AND B.USERNAME LIKE N'%${USERNAME}%' 
+			</if>
+			<choose>
+				<when test='orderby == "USERID"'> order by USERID  </when>
+				<when test='orderby == "UPDATE"'> order by MKSTAMP DESC </when>
+			</choose>
+    </select>
+	
+	<select id="corporateByUser_02InsertUpdate"  parameterType="hashmap" resultType="hashmap" >      	
+  		EXEC [dbo].[UP_P0112_SAVE]
+			#{MANDT},		--클라이언트
+			#{USERID},		--사용자ID
+			#{WERKS},		--법인
+			#{WERKS_ORG},	--기존법인
+			#{USEFLAG},		--사용유무
+			#{USERID2}		--등록자
+     </select>
+	
+	
+	<select id="corporateByUser_02Select_WERKS" parameterType="hashmap" resultType="hashmap" >
+	     	SELECT '[' + WERKS + '] ' + PLANTNAME AS PLANTNAME 
+	     		, WERKS AS WERKS
+			FROM TM_PLANT
+	     	WHERE MANDT = #{MANDT}
+			 AND USEFLAG <![CDATA[<>]]> 'N' 
+	     	ORDER BY WERKS
+    </select>
+	
+	
+	<select id="corporateByUser_02Delete" parameterType="hashmap" resultType="hashmap" >
+		EXEC [dbo].[UP_P0112_DELETE]
+			#{MANDT},       --클라이언트
+			#{USERID},      --사용자ID
+			#{WERKS}        --법인
+    </select>
+
+</mapper>
